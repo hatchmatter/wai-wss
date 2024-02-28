@@ -28,9 +28,17 @@ export class Server {
     this.handleRetellLlmWebSocket();
     this.handleRegisterCallAPI();
 
-    this.llmClient = new DemoLlmClient()
+    this.llmClient = new DemoLlmClient();
     this.retellClient = new RetellClient({
       apiKey: process.env.RETELL_API_KEY,
+    });
+
+    this.app.get("/health", async (req, res) => {
+      res.json({ status: "Ok" });
+    });
+
+    this.app.get("/", async (req, res) => {
+      res.json({ status: "Ok" });
     });
   }
 
@@ -40,27 +48,24 @@ export class Server {
   }
 
   handleRegisterCallAPI() {
-    this.app.post(
-      "/register",
-      async (req: Request, res: Response) => {
-        const { agentId } = req.body;
+    this.app.post("/register", async (req: Request, res: Response) => {
+      const { agentId } = req.body;
 
-        try {
-          const callResponse = await this.retellClient.registerCall({
-            agentId: agentId,
-            audioWebsocketProtocol: AudioWebsocketProtocol.Web,
-            audioEncoding: AudioEncoding.S16le,
-            sampleRate: 24000,
-          });
+      try {
+        const callResponse = await this.retellClient.registerCall({
+          agentId: agentId,
+          audioWebsocketProtocol: AudioWebsocketProtocol.Web,
+          audioEncoding: AudioEncoding.S16le,
+          sampleRate: 24000,
+        });
 
-          res.json(callResponse.callDetail);
-        } catch (error) {
-          console.error("Error registering call:", error);
+        res.json(callResponse.callDetail);
+      } catch (error) {
+        console.error("Error registering call:", error);
 
-          res.status(500).json({ error: "Failed to register call" });
-        }
-      },
-    );
+        res.status(500).json({ error: "Failed to register call" });
+      }
+    });
   }
 
   handleRetellLlmWebSocket() {
@@ -83,12 +88,12 @@ export class Server {
 
         ws.on("message", async (data: RawData, isBinary: boolean) => {
           console.log(data.toString());
-          
+
           if (isBinary) {
             console.error("Got binary message instead of text in websocket.");
             ws.close(1002, "Cannot find corresponding Retell LLM.");
           }
-          
+
           try {
             const request: RetellRequest = JSON.parse(data.toString());
             this.llmClient.DraftResponse(request, ws);
@@ -97,7 +102,7 @@ export class Server {
             ws.close(1002, "Cannot parse incoming message.");
           }
         });
-      },
+      }
     );
   }
 }
