@@ -43,7 +43,7 @@ export class Server {
   }
 
   listen(port: number): void {
-    this.app.listen(port);
+    this.app.listen(process.env.PORT || port);
     console.log("Listening on " + port);
   }
 
