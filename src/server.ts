@@ -3,7 +3,7 @@ import { RawData, WebSocket } from "ws";
 import { createServer, Server as HTTPServer } from "http";
 import cors from "cors";
 import expressWs from "express-ws";
-import { DemoLlmClient } from "./llm_openai";
+import OpenAiClient from "./openai";
 import { RetellClient } from "retell-sdk";
 import {
   AudioWebsocketProtocol,
@@ -11,11 +11,14 @@ import {
 } from "retell-sdk/models/components";
 import { RetellRequest } from "./types";
 
+const DEFAULT_GREETING = "Hey kids! How may I help you? Ask me anything.";
+
 export class Server {
   private httpServer: HTTPServer;
   public app: expressWs.Application;
-  private llmClient: DemoLlmClient;
+  private openaiClient: OpenAiClient;
   private retellClient: RetellClient;
+  private greeting: string;
 
   constructor() {
     this.app = expressWs(express()).app;
@@ -28,7 +31,7 @@ export class Server {
     this.handleRetellLlmWebSocket();
     this.handleRegisterCallAPI();
 
-    this.llmClient = new DemoLlmClient();
+    this.openaiClient = new OpenAiClient();
     this.retellClient = new RetellClient({
       apiKey: process.env.RETELL_API_KEY,
     });
@@ -44,12 +47,14 @@ export class Server {
 
   listen(port: number): void {
     this.app.listen(process.env.PORT || port);
-    console.log("Listening on " + port);
   }
 
   handleRegisterCallAPI() {
     this.app.post("/register", async (req: Request, res: Response) => {
-      const { agentId } = req.body;
+      const { agentId, assistantName, greeting } = req.body;
+
+      this.openaiClient.setAssistantName(assistantName);
+      this.greeting = greeting;
 
       try {
         const callResponse = await this.retellClient.registerCall({
@@ -72,23 +77,27 @@ export class Server {
     this.app.ws(
       "/llm-websocket/:call_id",
       async (ws: WebSocket, req: Request) => {
-        const callId = req.params.call_id;
-        console.log("Handle llm ws for: ", callId);
+        const call_id = req.params.call_id;
 
-        // Start sending the begin message to signal the client is ready.
-        this.llmClient.BeginMessage(ws);
+        // Send a greeting message to the client
+        const res = {
+          response_id: 0,
+          content: this.greeting || DEFAULT_GREETING,
+          content_complete: true,
+          end_call: false,
+        };
+
+        ws.send(JSON.stringify(res));
 
         ws.on("error", (err) => {
           console.error("Error received in LLM websocket client: ", err);
         });
 
         ws.on("close", (err) => {
-          console.error("Closing llm ws for: ", callId);
+          // console.error("Closing llm ws for: ", call_id);
         });
 
         ws.on("message", async (data: RawData, isBinary: boolean) => {
-          console.log(data.toString());
-
           if (isBinary) {
             console.error("Got binary message instead of text in websocket.");
             ws.close(1002, "Cannot find corresponding Retell LLM.");
@@ -96,7 +105,7 @@ export class Server {
 
           try {
             const request: RetellRequest = JSON.parse(data.toString());
-            this.llmClient.DraftResponse(request, ws);
+            this.openaiClient.DraftResponse(request, ws);
           } catch (err) {
             console.error("Error in parsing LLM websocket message: ", err);
             ws.close(1002, "Cannot parse incoming message.");
