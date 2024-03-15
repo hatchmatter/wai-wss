@@ -53,7 +53,7 @@ export class Server {
 
       try {
         const callResponse = await this.retellClient.registerCall({
-          agentId: agentId,
+          agentId,
           audioWebsocketProtocol: AudioWebsocketProtocol.Web,
           audioEncoding: AudioEncoding.S16le,
           sampleRate: 24000,
