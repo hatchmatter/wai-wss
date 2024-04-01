@@ -1,93 +1,43 @@
 import OpenAI from "openai";
-import { WebSocket } from "ws";
-import { RetellRequest, RetellResponse, Utterance } from "./types";
-import agentObjective from "./agentObjective";
+import { RetellRequest, Utterance } from "./types";
 import createAssistantPrompt from "./assistantPrompt";
+import tools from "./tools";
 
-export default class OpenAiClient {
-  private client: OpenAI;
-  private assistantName: string;
+const MODEL = "gpt-4-turbo-preview";
 
-  constructor() {
-    this.client = new OpenAI({
-      apiKey: process.env.OPENAI_APIKEY,
-      organization: process.env.OPENAI_ORGANIZATION_ID,
-    });
-  }
+const openai: OpenAI = new OpenAI({
+  apiKey: process.env.OPENAI_APIKEY,
+  organization: process.env.OPENAI_ORGANIZATION_ID,
+});
 
-  setAssistantName(assistantName: string) {
-    this.assistantName = assistantName;
-  }
+export async function createCompletion(
+  prompt: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+) {
+  const stream = await openai.chat.completions.create({
+    model: MODEL,
+    messages: prompt,
+    // @ts-ignore
+    tools,
+    stream: true,
+    temperature: 0.3,
+    frequency_penalty: 1,
+    max_tokens: 500,
+  });
 
-  async DraftResponse(request: RetellRequest, ws: WebSocket) {
-    if (request.interaction_type === "update_only") {
-      // process live transcript update if needed
-      return;
-    }
-
-    const requestMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
-      preparePrompt(request, this.assistantName);
-
-    try {
-      const completions = await this.client.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages: requestMessages,
-        stream: true,
-        temperature: 0.3,
-        frequency_penalty: 1,
-        max_tokens: 500,
-      });
-
-      // const response = [];
-
-      for await (const completion of completions) {
-        if (completion.choices.length >= 1) {
-          const delta = completion.choices[0].delta;
-          
-          if (!delta || !delta.content) continue;
-
-          const res = buildResponse(request, delta.content, false);
-          
-          ws.send(JSON.stringify(res));
-          // response.push(res);
-        }
-      }
-
-      // return response;
-    } catch (err) {
-      console.error("Error in gpt stream: ", err);
-    } finally {
-      const res = buildResponse(request, "");
-     
-      // ws.send(JSON.stringify(res));
-      return res;
-    }
-  }
+  return stream;
 }
 
-export function buildResponse(
+export function preparePrompt(
   request: RetellRequest,
-  content: string,
-  contentComplete: boolean = true
-): RetellResponse {
-  return {
-    response_id: request.response_id,
-    content,
-    content_complete: contentComplete,
-    end_call: false,
-  };
-}
-
-
-function preparePrompt(request: RetellRequest, assistantName: string) {
-  const transcript = createTranscript(
-    request.transcript
-  );
+  assistantName: string,
+  callerName: string
+) {
+  const transcript = createTranscript(request.transcript);
   const requestMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
     [
       {
         role: "system",
-        content: agentObjective + createAssistantPrompt(assistantName),
+        content: createAssistantPrompt(assistantName, callerName),
       },
     ];
 
