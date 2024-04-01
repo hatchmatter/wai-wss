@@ -4,5 +4,4 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
 
 import app from "./server";
 
-// const server = new Server();
-app.listen(8080);
+app.listen(process.env.PORT || 8080);
