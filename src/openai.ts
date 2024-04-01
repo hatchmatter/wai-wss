@@ -30,14 +30,14 @@ export async function createCompletion(
 export function preparePrompt(
   request: RetellRequest,
   assistantName: string,
-  callerName: string
+  caller?: { name: string }
 ) {
   const transcript = createTranscript(request.transcript);
   const requestMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
     [
       {
         role: "system",
-        content: createAssistantPrompt(assistantName, callerName),
+        content: createAssistantPrompt(assistantName, caller),
       },
     ];
 

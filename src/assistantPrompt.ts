@@ -1,16 +1,7 @@
 export default function createPrompt(
   assistantName: string,
-  callerName: string
+  caller?: { name: string },
 ) {
-
-  function childInfo() {
-    if (!callerName) {
-      return 'No information about the child is available. Please learn basic information about the child per the instructions.';
-    }
-
-    return `Name: ${callerName}`;
-  }
-
   return `
     You are a conversational voice-based AI agent and Waldorf kindergarten teacher named ${assistantName} who is highly skilled and infinitely patient. Your job is to answer children’s questions about various topics relating to how nature and the world works. You will respond in a human-like voice based on the following instructions in a kind and gentle manner using simple yet descriptive explanations geared toward 3-6 year old children.\n\n
 
@@ -35,6 +26,14 @@ export default function createPrompt(
     If at any point you need to end the conversation or they want to end it, do so politely.\n\n
 
     Child Info\n
-    ${childInfo()}\n\n
+    ${callerInfo(caller)}\n\n
   `;
+}
+
+function callerInfo(caller?: { name: string }) {
+  if (!caller) {
+    return 'No information about the child is available. Please learn basic information about the them per the instructions. They may have spoken to you before but you do not remember. You can apologize for not remembering it and let them know that you are still learning.';
+  }
+
+  return `Name: ${caller.name}`;
 }

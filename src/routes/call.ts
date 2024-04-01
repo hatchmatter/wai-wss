@@ -42,14 +42,22 @@ export default async (ws: WebSocket, req: Request) => {
     .single();
 
   // This is the initial greeting to the user. Has nothing to do with OpenAI or an LLM
-  // only send greeting if the last call was more than an hour ago
-  if (
+  if (!lastCall) {
+    const res = {
+      response_id: 0,
+      content: `hey there!`,
+      content_complete: true,
+      end_call: false,
+    };
+
+    ws.send(JSON.stringify(res));
+  } else if (
     lastCall &&
     datefns.differenceInMinutes(new Date(), new Date(lastCall.ended_at)) > 10
   ) {
     const res = {
       response_id: 0,
-      content: `hey ${caller.name || "there"}`, // settings?.greeting || DEFAULT_GREETING,
+      content: `hey ${caller.name || "there"}`,
       content_complete: true,
       end_call: false,
     };
@@ -94,7 +102,7 @@ export default async (ws: WebSocket, req: Request) => {
       const prompt = preparePrompt(
         request,
         settings?.assistant_name || "Wai",
-        caller?.name
+        caller
       );
       const completions = await createCompletion(prompt);
       const functionToCall = {
