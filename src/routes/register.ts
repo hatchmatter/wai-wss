@@ -11,7 +11,7 @@ const retell = new RetellClient({
 });
 
 export default async (req: Request, res: Response) => {
-  const { agentId } = req.body;
+  const { agentId, timezone } = req.body;
   const accessToken = req.headers.authorization.split(" ")[1];
 
   if (!accessToken) res.status(403).json({ message: "Not authorized" });
@@ -36,6 +36,7 @@ export default async (req: Request, res: Response) => {
     await supabase.from("calls").insert({
       user_id: user.id,
       retell_id: callDetail.callId,
+      timezone,
     });
 
     res.json(callDetail);

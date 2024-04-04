@@ -124,6 +124,7 @@ export type Database = {
           ended_at: string | null
           id: string
           retell_id: string
+          timezone: string | null
           updated_at: string | null
           user_id: string
         }
@@ -133,6 +134,7 @@ export type Database = {
           ended_at?: string | null
           id?: string
           retell_id: string
+          timezone?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -142,6 +144,7 @@ export type Database = {
           ended_at?: string | null
           id?: string
           retell_id?: string
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string
         }

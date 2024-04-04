@@ -67,6 +67,10 @@ export default {
     const type = properties.type;
     let now = new Date();
 
+    if (properties.timezone) {
+      now = new Date(now.toLocaleString("en-US", { timeZone: properties.timezone }));
+    }
+
     let message = "";
     if (type === "date") {
       message = format(now, "EEEE, MMMM d, yyyy");
