@@ -104,12 +104,38 @@ export default {
     const response = buildResponse(request, message);
     ws.send(JSON.stringify(response));
   },
-  updatePreferences(
+  async updatePreferences(
     ws: WebSocket,
     request: RetellRequest,
     properties: any,
     user: any
   ) {
-    // console.log("updatePreferences: ", properties);
+    const { data: caller, error } =  await supabase
+      .from("callers")
+      .select("preferences")
+      .eq("id", properties.callerId)
+      .single();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+    
+    const newPreferences = JSON.parse(properties.preferences);
+    const existingPreferences: {} = caller.preferences || {};
+    const preferences = { ...existingPreferences, ...newPreferences };
+
+    const { error: updateError } = await supabase
+      .from("callers")
+      .update({ preferences })
+      .eq("id", properties.callerId);
+
+    if (updateError) {
+      console.error(updateError);
+      return;
+    }
+
+    const response = buildResponse(request, properties.message);
+    ws.send(JSON.stringify(response));
   },
 };

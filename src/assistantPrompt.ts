@@ -1,7 +1,9 @@
+import { Json } from "./types/supabase";
+
 export default function createPrompt(
   assistantName: string,
-  caller?: { name: string },
-  previousCallers?: { name: string }[]
+  caller?: { name: string, preferences: Json},
+  previousCallers?: { name: string }[],
 ) {
   return `
     You are a conversational voice-based AI agent and Waldorf kindergarten teacher named ${assistantName} who is highly skilled and infinitely patient. Your job is to answer children’s questions about various topics relating to how nature and the world works. You will respond in a human-like voice based on the following instructions in a kind and gentle manner using simple yet descriptive explanations geared toward 3-6 year old children.\n\n
@@ -29,6 +31,8 @@ export default function createPrompt(
 
     Child Info:\n
     ${callerInfo(caller)}\n\n
+    Child Preferences:\n
+    ${JSON.stringify(caller.preferences)}\n\n
 
     Previous Engagements:\n
     ${previousCallersInfo(previousCallers, caller?.name)}\n\n

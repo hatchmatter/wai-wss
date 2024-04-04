@@ -67,15 +67,15 @@ export default [
         type: "object",
         properties: {
           preferences: {
-            type: "object",
-            description: "The child's preferences",
+            type: "string",
+            description: "The child's preferences in key-value pairs. For example, { favoriteColor: 'blue', favoriteFood: 'pizza' }",
           },
           message: {
             type: "string",
             description: "The message you will say when updating the child's preferences",
           },
         },
-        required: ["preferences"],
+        required: ["preferences", "message"],
       },
     }
   }
