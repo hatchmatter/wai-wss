@@ -24,7 +24,13 @@ export default async (req: Request, res: Response) => {
   try {
     const {
       data: { user },
+      error,
     } = await supabase.auth.getUser(accessToken);
+
+    if (error) {
+      console.error(error);
+      res.status(403).json({ message: "Not authorized" });
+    }
 
     const { callDetail } = await retell.registerCall({
       agentId,
@@ -42,6 +48,6 @@ export default async (req: Request, res: Response) => {
     res.json(callDetail);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Failed to retrieve user settings" });
+    res.status(500).json({ error: "Failed to register call" });
   }
 };
