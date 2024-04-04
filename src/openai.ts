@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { RetellRequest, Utterance } from "./types";
 import createAssistantPrompt from "./assistantPrompt";
 import tools from "./tools";
+import { Json } from "./types/supabase";
 
 const MODEL = "gpt-4-turbo-preview";
 
@@ -30,14 +31,15 @@ export async function createCompletion(
 export function preparePrompt(
   request: RetellRequest,
   assistantName: string,
-  caller?: { name: string }
+  caller?: { name: string, preferences: Json },
+  callers?: { name: string }[],
 ) {
   const transcript = createTranscript(request.transcript);
   const requestMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
     [
       {
         role: "system",
-        content: createAssistantPrompt(assistantName, caller),
+        content: createAssistantPrompt(assistantName, caller, callers),
       },
     ];
 
