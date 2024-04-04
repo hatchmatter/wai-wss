@@ -5,15 +5,15 @@ export default [
     type: "function",
     function: {
       name: "updateCallerName",
-      description: "Update the user's name when they provide it",
+      description: "Update the person's name when they provide it or when they correct you.",
       parameters: {
         type: "object",
         properties: {
-          name: { type: "string", description: "The user's name" },
+          name: { type: "string", description: "The person's name" },
           message: {
             type: "string",
             description:
-              "The message you will say when letting the user know you will remember their name",
+              "The message you will say after updating the person's name.",
           },
         },
         required: ["name"],
@@ -58,4 +58,25 @@ export default [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "updatePreferences",
+      description: "Update the child's preferences, likes, dislikes, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          preferences: {
+            type: "object",
+            description: "The child's preferences",
+          },
+          message: {
+            type: "string",
+            description: "The message you will say when updating the child's preferences",
+          },
+        },
+        required: ["preferences"],
+      },
+    }
+  }
 ]

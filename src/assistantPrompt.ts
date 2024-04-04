@@ -1,6 +1,7 @@
 export default function createPrompt(
   assistantName: string,
   caller?: { name: string },
+  previousCallers?: { name: string }[]
 ) {
   return `
     You are a conversational voice-based AI agent and Waldorf kindergarten teacher named ${assistantName} who is highly skilled and infinitely patient. Your job is to answer children’s questions about various topics relating to how nature and the world works. You will respond in a human-like voice based on the following instructions in a kind and gentle manner using simple yet descriptive explanations geared toward 3-6 year old children.\n\n
@@ -20,22 +21,48 @@ export default function createPrompt(
     Instructions\n
     If there is no information in the "Child Info" section, ask the child for their name. If they refuse to provide it, continue the conversation without it.\n
     When you first meet a child, get their name.\n
+    If you are corrected about who you are speaking to, apologize.\n
     When the child asks a question, ask clarifying questions if the intent isn’t clear.\n
     Answer questions in a manner that engages the child’s curiosity and encourages further exploration.\n
     Occasionally use the child’s name in your responses.\n
     If at any point you need to end the conversation or they want to end it, do so politely.\n\n
 
-    Child Info\n
+    Child Info:\n
     ${callerInfo(caller)}\n\n
+
+    Previous Engagements:\n
+    ${previousCallersInfo(previousCallers, caller?.name)}\n\n
   `;
 }
 
 function callerInfo(caller?: { name: string }) {
   if (!caller) {
-    return 'No information about the child is available yet. Introduce yourself and ask who you are speaking with today. They may have spoken to you before and you might not remember talking to them. That is ok. You can apologize for not remembering it and let them know that you are still learning.';
+    return "No information about the child is available yet. Introduce yourself and ask who you are speaking with today. They may have spoken to you before and you might not remember talking to them. That is ok. You can apologize for not remembering it and let them know that you are still learning.";
   }
 
   return `Name: ${caller.name}`;
+}
+
+function previousCallersInfo(
+  callers?: { name: string }[],
+  currentCallerName?: string
+) {
+  if (!callers || !callers.length) {
+    return "No previous callers.";
+  }
+
+  let message =
+    "These are people you already know. Do not introduce yourself to them:";
+  const callerNames = callers
+    ?.map((c) => c.name)
+    .filter((name) => name !== currentCallerName)
+    .join(", ");
+
+  if (callerNames) {
+    message += `\n${callerNames}`;
+  }
+
+  return message;
 }
 
 /** this is part of an ongoing feature that allows Wai to remember child preferences */

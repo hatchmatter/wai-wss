@@ -41,6 +41,10 @@ export default async (ws: WebSocket, req: Request) => {
     .select("*")
     .eq("id", lastCall?.current_caller_id)
     .single();
+  const { data: callers } = await supabase
+    .from("callers")
+    .select("name")
+    .eq("user_id", user.id);
 
   const greeting = initialGreeting(settings, caller, lastCall);
 
@@ -51,11 +55,16 @@ export default async (ws: WebSocket, req: Request) => {
   });
 
   ws.on("close", async (err) => {
+    const { data: call } = await supabase
+      .from("calls")
+      .select("id, current_caller_id")
+      .eq("retell_id", req.params.id)
+      .single();
     await supabase
       .from("calls")
       .update({
         ended_at: new Date().toISOString(),
-        current_caller_id: caller?.id,
+        current_caller_id: call.current_caller_id ?? caller?.id,
       })
       .eq("id", call.id);
   });
@@ -77,7 +86,8 @@ export default async (ws: WebSocket, req: Request) => {
       const prompt = preparePrompt(
         request,
         settings?.assistant_name || "Wai",
-        caller
+        caller,
+        callers
       );
       const completions = await createCompletion(prompt);
       const functionToCall = {
@@ -128,7 +138,6 @@ export default async (ws: WebSocket, req: Request) => {
   });
 };
 
-
 function initialGreeting(settings: any, caller: any, lastCall: any) {
   let res;
   // This is the initial greeting to the user. Has nothing to do with OpenAI or an LLM
@@ -136,13 +145,16 @@ function initialGreeting(settings: any, caller: any, lastCall: any) {
   if (!lastCall) {
     res = {
       response_id: 0,
-      content: `Hey there! I'm ${settings?.assistant_name || "Wai"}. What's your name?`,
+      content: `Hey there! I'm ${
+        settings?.assistant_name || "Wai"
+      }. What's your name?`,
       content_complete: true,
       end_call: false,
     };
-  // If Wai hasn't spoken to the user in 10 minutes, greet them
+    // If Wai hasn't spoken to the user in 10 minutes, greet them
   } else if (
-    datefns.differenceInMinutes(new Date(), new Date(lastCall.ended_at)) > 10 || process.env.MODE === 'debug'
+    datefns.differenceInMinutes(new Date(), new Date(lastCall.ended_at)) > 10 ||
+    process.env.MODE === "debug"
   ) {
     res = {
       response_id: 0,
@@ -150,7 +162,7 @@ function initialGreeting(settings: any, caller: any, lastCall: any) {
       content_complete: true,
       end_call: false,
     };
-  // Otherwise, Wai just talked to them so we don't need to greet them again
+    // Otherwise, Wai just talked to them so we don't need to greet them again
   } else {
     res = {
       response_id: 0,
