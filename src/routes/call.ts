@@ -4,12 +4,13 @@ import { Request } from "express";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 import { RetellRequest } from "../types";
+import type { Database } from "../types/supabase";
 import { createCompletion, preparePrompt } from "../openai";
 import { buildResponse } from "../utils";
 import { functions } from "../tools";
 
 export default async (ws: WebSocket, req: Request) => {
-  const supabase = new SupabaseClient(
+  const supabase = new SupabaseClient<Database>(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
@@ -41,38 +42,9 @@ export default async (ws: WebSocket, req: Request) => {
     .eq("id", lastCall?.current_caller_id)
     .single();
 
-  // This is the initial greeting to the user. Has nothing to do with OpenAI or an LLM
-  if (!lastCall) {
-    const res = {
-      response_id: 0,
-      content: `hey there!`,
-      content_complete: true,
-      end_call: false,
-    };
+  const greeting = initialGreeting(settings, caller, lastCall);
 
-    ws.send(JSON.stringify(res));
-  } else if (
-    lastCall &&
-    datefns.differenceInMinutes(new Date(), new Date(lastCall.ended_at)) > 10
-  ) {
-    const res = {
-      response_id: 0,
-      content: `hey ${caller.name || "there"}`,
-      content_complete: true,
-      end_call: false,
-    };
-
-    ws.send(JSON.stringify(res));
-  } else {
-    const res = {
-      response_id: 0,
-      content: "",
-      content_complete: true,
-      end_call: false,
-    };
-
-    ws.send(JSON.stringify(res));
-  }
+  ws.send(JSON.stringify(greeting));
 
   ws.on("error", (err) => {
     console.error("Error received in LLM websocket client: ", err);
@@ -81,7 +53,10 @@ export default async (ws: WebSocket, req: Request) => {
   ws.on("close", async (err) => {
     await supabase
       .from("calls")
-      .update({ ended_at: new Date() })
+      .update({
+        ended_at: new Date().toISOString(),
+        current_caller_id: caller?.id,
+      })
       .eq("id", call.id);
   });
 
@@ -112,7 +87,7 @@ export default async (ws: WebSocket, req: Request) => {
 
       for await (const completion of completions) {
         if (completion.choices.length >= 1) {
-          const delta = completion.choices[0].delta;
+          const { delta } = completion.choices[0];
 
           if (delta.tool_calls) {
             const tool_call = delta.tool_calls[0];
@@ -139,7 +114,7 @@ export default async (ws: WebSocket, req: Request) => {
 
         functions[functionToCall.name](ws, request, args, user);
 
-        await supabase.from('functions').insert({
+        await supabase.from("functions").insert({
           name: functionToCall.name,
           args,
           call_id: call.id,
@@ -151,3 +126,38 @@ export default async (ws: WebSocket, req: Request) => {
     }
   });
 };
+
+
+function initialGreeting(settings: any, caller: any, lastCall: any) {
+  let res;
+  // This is the initial greeting to the user. Has nothing to do with OpenAI or an LLM
+  // If they are a new caller, or if calls have never been stored in the database, greet them generically
+  if (!lastCall) {
+    res = {
+      response_id: 0,
+      content: `Hey there! I'm ${settings?.assistant_name || "Wai"}. What's your name?`,
+      content_complete: true,
+      end_call: false,
+    };
+  // If Wai hasn't spoken to the user in 10 minutes, greet them
+  } else if (
+    datefns.differenceInMinutes(new Date(), new Date(lastCall.ended_at)) > 10 || process.env.MODE === 'debug'
+  ) {
+    res = {
+      response_id: 0,
+      content: `hey ${caller?.name || "there"}`, // it's possible we still don't know their name due to ASR errors or other issues
+      content_complete: true,
+      end_call: false,
+    };
+  // Otherwise, Wai just talked to them so we don't need to greet them again
+  } else {
+    res = {
+      response_id: 0,
+      content: "",
+      content_complete: true,
+      end_call: false,
+    };
+  }
+
+  return res;
+}

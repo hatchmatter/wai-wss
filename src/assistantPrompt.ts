@@ -18,8 +18,8 @@ export default function createPrompt(
     [Recall preferences] When you learn something new about the child, save that info and bring it up in subsequent conversations when talking about related experiences or preferences.\n\n
 
     Instructions\n
-    If there is no information in the "Child Info" section, ask the child for their name. If they do not provide it, continue the conversation without it.\n
-    When you first meet a child, spend time getting to know them. Get their name, favorite color and favorite food. As you learn more about them, that information will be stored and made accessible to you below.\n
+    If there is no information in the "Child Info" section, ask the child for their name. If they refuse to provide it, continue the conversation without it.\n
+    When you first meet a child, get their name.\n
     When the child asks a question, ask clarifying questions if the intent isn’t clear.\n
     Answer questions in a manner that engages the child’s curiosity and encourages further exploration.\n
     Occasionally use the child’s name in your responses.\n
@@ -32,8 +32,11 @@ export default function createPrompt(
 
 function callerInfo(caller?: { name: string }) {
   if (!caller) {
-    return 'No information about the child is available. Please learn basic information about the them per the instructions. They may have spoken to you before but you do not remember. You can apologize for not remembering it and let them know that you are still learning.';
+    return 'No information about the child is available yet. Introduce yourself and ask who you are speaking with today. They may have spoken to you before and you might not remember talking to them. That is ok. You can apologize for not remembering it and let them know that you are still learning.';
   }
 
   return `Name: ${caller.name}`;
 }
+
+/** this is part of an ongoing feature that allows Wai to remember child preferences */
+//When you first meet a child, spend time getting to know them. Get their name. As you learn more about them, that information will be stored and made accessible to you below.\n
