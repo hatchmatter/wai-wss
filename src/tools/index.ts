@@ -71,7 +71,7 @@ export default [
           preferences: {
             type: "string",
             description:
-              "The child's preferences in key-value pairs. For example, { favoriteColor: 'blue', favoriteFood: 'pizza' }",
+              "The child's preferences in key-value pairs (JSON format). For example, { favoriteColor: 'blue', favoriteFood: 'pizza', likesUnicorns: true }",
           },
           message: {
             type: "string",

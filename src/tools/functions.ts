@@ -26,7 +26,7 @@ export default {
       .single();
 
     if (error) {
-      console.error(error);
+      console.error("Error updating caller: ", error);
       return;
     }
 
@@ -38,7 +38,7 @@ export default {
       });
 
     if (associateError) {
-      console.error(associateError);
+      console.error("Error associating callers_calls: ", associateError);
       return;
     }
 
@@ -48,7 +48,7 @@ export default {
       .eq("id", properties.callId);
 
     if (callError) {
-      console.error(callError);
+      console.error("Error updating call: ", callError);
       return;
     }
 
@@ -62,10 +62,14 @@ export default {
     properties: any,
     user: any
   ) {
-    await supabase
+    const { error } = await supabase
       .from("calls")
       .update({ ended_at: new Date().toISOString() })
       .eq("id", properties.callId);
+
+    if (error) {
+      console.error("Error updating call end time: ", error);
+    }
 
     const response = buildResponse(request, properties.message, true, true);
     ws.send(JSON.stringify(response));
@@ -112,14 +116,34 @@ export default {
     properties: any,
     user: any
   ) {
+    // If it's the caller's first call, we need to get the current_caller_id from the call
+    // as it won't be passed in the properties.
+    const query = supabase
+      .from("calls")
+      .select("current_caller_id")
+      .eq("id", properties.callId)
+      .single();
+    let callerId = properties.callerId;
+
+    if (!callerId) {
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error getting call: ", error);
+        return;
+      }
+
+      callerId = data.current_caller_id;
+    }
+
     const { data: caller, error } = await supabase
       .from("callers")
       .select("preferences")
-      .eq("id", properties.callerId)
+      .eq("id", callerId)
       .single();
 
     if (error) {
-      console.error(error);
+      console.error("Error updating preferences: ", error);
       return;
     }
 
@@ -134,7 +158,7 @@ export default {
       const { error: updateError } = await supabase
         .from("callers")
         .update({ preferences })
-        .eq("id", properties.callerId);
+        .eq("id", callerId);
 
       if (updateError) {
         console.error(updateError);
