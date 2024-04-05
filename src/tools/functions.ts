@@ -30,10 +30,12 @@ export default {
       return;
     }
 
-    const { error: associateError } = await supabase.from("callers_calls").upsert({
-      caller_id: caller.id,
-      call_id: properties.callId,
-    });
+    const { error: associateError } = await supabase
+      .from("callers_calls")
+      .upsert({
+        caller_id: caller.id,
+        call_id: properties.callId,
+      });
 
     if (associateError) {
       console.error(associateError);
@@ -110,7 +112,7 @@ export default {
     properties: any,
     user: any
   ) {
-    const { data: caller, error } =  await supabase
+    const { data: caller, error } = await supabase
       .from("callers")
       .select("preferences")
       .eq("id", properties.callerId)
@@ -120,19 +122,25 @@ export default {
       console.error(error);
       return;
     }
-    
-    const newPreferences = JSON.parse(properties.preferences);
-    const existingPreferences: {} = caller.preferences || {};
-    const preferences = { ...existingPreferences, ...newPreferences };
 
-    const { error: updateError } = await supabase
-      .from("callers")
-      .update({ preferences })
-      .eq("id", properties.callerId);
+    // Wrapped in a try/catch block because sometimes the properties.preferences are not valid JSON
+    // and we don't want to crash, just catch and move on. Not a big deal.
+    // TODO: Add a check for valid JSON and try to fix it if it's not.
+    try {
+      const newPreferences = JSON.parse(properties.preferences);
+      const existingPreferences: {} = caller.preferences || {};
+      const preferences = { ...existingPreferences, ...newPreferences };
 
-    if (updateError) {
-      console.error(updateError);
-      return;
+      const { error: updateError } = await supabase
+        .from("callers")
+        .update({ preferences })
+        .eq("id", properties.callerId);
+
+      if (updateError) {
+        console.error(updateError);
+      }
+    } catch (e) {
+      console.error(e);
     }
 
     const response = buildResponse(request, properties.message);
