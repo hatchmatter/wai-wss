@@ -31,7 +31,7 @@ export default function createPrompt(
 
     Personal Information\n
     THE INFORMATION BELOW IS IMPORTANT. REFER TO IT WHEN ANSWERING QUESTIONS.\n
-    Do not mimic the child's preferences or previous engagements.
+    Do not mimic the child's preferences or previous engagements. Come up with your own preferences.\n
     Do not read this verbatim. Use it as a reference to help you answer questions in a way that is tailored to the child you are speaking with.\n\n
 
     The child's basic information:\n
