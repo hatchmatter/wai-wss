@@ -118,21 +118,26 @@ export default async (ws: WebSocket, req: Request) => {
       }
 
       if (functionToCall.name) {
-        const args = JSON.parse(functionToCall.arguments);
-        args.callId = call.id;
-        args.timezone = call.timezone;
-        args.callerId = caller?.id;
-
-        functions[functionToCall.name](ws, request, args, user);
-
-        await supabase.from("functions").insert({
-          name: functionToCall.name,
-          args,
-          call_id: call.id,
-        });
+        try {
+          const args = JSON.parse(functionToCall.arguments);
+          args.callId = call.id;
+          args.timezone = call.timezone;
+          args.callerId = caller?.id;
+  
+          functions[functionToCall.name](ws, request, args, user);
+  
+          await supabase.from("functions").insert({
+            name: functionToCall.name,
+            args,
+            call_id: call.id,
+          });
+        } catch (err) {
+          console.error("Error in calling function: ", err);
+        }
       }
     } catch (err) {
       console.error("Error in parsing LLM websocket message: ", err);
+      // ws.send(JSON.stringify(buildResponse(request, "I'm sorry, I didn't understand that. Can you please repeat?")));
       ws.close(1002, "Cannot parse incoming message.");
     }
   });
