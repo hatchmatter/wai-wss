@@ -1,11 +1,11 @@
-export { default as functions } from './functions'
+export { default as functions } from "./functions";
 
 export default [
   {
     type: "function",
     function: {
       name: "updateCallerName",
-      description: "Update the person's name when they provide it or when they correct you.",
+      description: "Function that gets called when you get the person's name.",
       parameters: {
         type: "object",
         properties: {
@@ -13,7 +13,7 @@ export default [
           message: {
             type: "string",
             description:
-              "The message you will say after updating the person's name.",
+              "The message you will say after getting the person's name.",
           },
         },
         required: ["name"],
@@ -41,7 +41,7 @@ export default [
     type: "function",
     function: {
       name: "getCurrentDateTime",
-      description: "Get the current date and/or time.",
+      description: "Get the current day, date and/or time.",
       parameters: {
         type: "object",
         properties: {
@@ -51,7 +51,8 @@ export default [
           },
           message: {
             type: "string",
-            description: `The message you will say with the current date and/or time`,
+            description:
+              "The message you will say with the current day, date and/or time",
           },
         },
         required: ["type", "timezone", "message"],
@@ -62,21 +63,24 @@ export default [
     type: "function",
     function: {
       name: "updatePreferences",
-      description: "Update the child's preferences, likes, dislikes, etc.",
+      description:
+        "Update the child's preferences (likes, dislikes, favorites, etc) when you learn something new about them.",
       parameters: {
         type: "object",
         properties: {
           preferences: {
             type: "string",
-            description: "The child's preferences in key-value pairs. For example, { favoriteColor: 'blue', favoriteFood: 'pizza' }",
+            description:
+              "The child's preferences in key-value pairs. For example, { favoriteColor: 'blue', favoriteFood: 'pizza' }",
           },
           message: {
             type: "string",
-            description: "The message you will say when updating the child's preferences",
+            description:
+              "The message you will say when updating the child's preferences",
           },
         },
         required: ["preferences", "message"],
       },
-    }
-  }
-]
+    },
+  },
+];
