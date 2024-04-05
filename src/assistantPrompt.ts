@@ -37,7 +37,7 @@ export default function createPrompt(
     The child's basic information:\n
     ${callerInfo(caller)}\n\n
     The child's preferences:\n
-    ${JSON.stringify(caller.preferences)}\n\n
+    ${caller && JSON.stringify(caller.preferences)}\n\n
 
     People you've previously interacted with:\n
     ${previousCallersInfo(previousCallers, caller?.name)}\n\n
