@@ -75,41 +75,41 @@ export default {
     ws.send(JSON.stringify(response));
   },
 
-  getCurrentDateTime(
-    ws: WebSocket,
-    request: RetellRequest,
-    properties: any,
-    user: any
-  ) {
-    const type = properties.type;
-    let now = new Date();
+  // getCurrentDateTime(
+  //   ws: WebSocket,
+  //   request: RetellRequest,
+  //   properties: any,
+  //   user: any
+  // ) {
+  //   const type = properties.type;
+  //   let now = new Date();
 
-    if (properties.timezone) {
-      now = new Date(
-        now.toLocaleString("en-US", { timeZone: properties.timezone })
-      );
-    }
+  //   if (properties.timezone) {
+  //     now = new Date(
+  //       now.toLocaleString("en-US", { timeZone: properties.timezone })
+  //     );
+  //   }
 
-    let message = "";
-    if (type === "date") {
-      message = format(now, "EEEE, MMMM d, yyyy");
-    } else if (type === "time") {
-      message = format(now, "h:mm a");
-    } else if (type === "date_time") {
-      message = format(now, "EEEE, MMMM d, yyyy 'at' h:mm a");
-    } else if (type === "day") {
-      message = format(now, "EEEE");
-    } else {
-      message = "unknown";
-    }
+  //   let message = "";
+  //   if (type === "date") {
+  //     message = format(now, "EEEE, MMMM d, yyyy");
+  //   } else if (type === "time") {
+  //     message = format(now, "h:mm a");
+  //   } else if (type === "date_time") {
+  //     message = format(now, "EEEE, MMMM d, yyyy 'at' h:mm a");
+  //   } else if (type === "day") {
+  //     message = format(now, "EEEE");
+  //   } else {
+  //     message = "unknown";
+  //   }
 
-    if (properties.message) {
-      message = `${properties.message} ${message}`;
-    }
+  //   if (properties.message) {
+  //     message = `${properties.message} ${message}`;
+  //   }
 
-    const response = buildResponse(request, message);
-    ws.send(JSON.stringify(response));
-  },
+  //   const response = buildResponse(request, message);
+  //   ws.send(JSON.stringify(response));
+  // },
   async updatePreferences(
     ws: WebSocket,
     request: RetellRequest,

@@ -37,28 +37,28 @@ export default [
       },
     },
   },
-  {
-    type: "function",
-    function: {
-      name: "getCurrentDateTime",
-      description: "Get the current day, date and/or time.",
-      parameters: {
-        type: "object",
-        properties: {
-          type: {
-            type: "string",
-            description: `The type of date and/or time you want to get. Options include "day", "date", "time", and "date_time"`,
-          },
-          message: {
-            type: "string",
-            description:
-              "The message you will say with the current day, date and/or time",
-          },
-        },
-        required: ["type", "timezone", "message"],
-      },
-    },
-  },
+  // {
+  //   type: "function",
+  //   function: {
+  //     name: "getCurrentDateTime",
+  //     description: "Get the current day, date and/or time.",
+  //     parameters: {
+  //       type: "object",
+  //       properties: {
+  //         type: {
+  //           type: "string",
+  //           description: `The type of date and/or time you want to get. Options include "day", "date", "time", and "date_time"`,
+  //         },
+  //         message: {
+  //           type: "string",
+  //           description:
+  //             "The message you will say with the current day, date and/or time",
+  //         },
+  //       },
+  //       required: ["type", "timezone", "message"],
+  //     },
+  //   },
+  // },
   {
     type: "function",
     function: {

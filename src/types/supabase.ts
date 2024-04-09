@@ -128,6 +128,7 @@ export type Database = {
           id: string
           retell_id: string
           timezone: string | null
+          transcript: Json | null
           updated_at: string | null
           user_id: string
         }
@@ -138,6 +139,7 @@ export type Database = {
           id?: string
           retell_id: string
           timezone?: string | null
+          transcript?: Json | null
           updated_at?: string | null
           user_id: string
         }
@@ -148,6 +150,7 @@ export type Database = {
           id?: string
           retell_id?: string
           timezone?: string | null
+          transcript?: Json | null
           updated_at?: string | null
           user_id?: string
         }

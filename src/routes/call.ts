@@ -6,7 +6,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { RetellRequest } from "../types";
 import type { Database } from "../types/supabase";
 import { createCompletion, preparePrompt } from "../openai";
-import { buildResponse } from "../utils";
+import { buildResponse, getCurrentDateTime } from "../utils";
 import { functions } from "../tools";
 
 export default async (ws: WebSocket, req: Request) => {
@@ -25,9 +25,16 @@ export default async (ws: WebSocket, req: Request) => {
     .select("*")
     .eq("user_id", call.user_id)
     .not("current_caller_id", "is", null)
-    .order("created_at", { ascending: false })
+    .order("ended_at", { ascending: false })
     .limit(1)
     .single();
+  const { data: calls } = await supabase
+    .from("calls")
+    .select("transcript, created_at")
+    .eq("user_id", call.user_id)
+    .eq("current_caller_id", lastCall?.current_caller_id)
+    .not("transcript", "is", null)
+    .order("ended_at", { ascending: true });
   const {
     data: { user },
   } = await supabase.auth.admin.getUserById(call.user_id);
@@ -83,12 +90,46 @@ export default async (ws: WebSocket, req: Request) => {
         return;
       }
 
+      function formatTranscript(call, i) {
+        const { transcript } = call;
+        const formatted = transcript
+          ?.map((t) => {
+            if (t.content.length < 10) {
+              return null;
+            }
+
+            return `${t.role}: ${t.content}\n`;
+          })
+          .filter(Boolean)
+          .join("");
+
+        if (!formatted) {
+          return null;
+        }
+
+        return `
+          Call: #${i}
+          Took place at: ${datefns.format(
+            new Date(call.created_at),
+            "EEEE, MMMM d, yyyy 'at' h:mm a"
+          )}
+          Transcript: ${formatted}`;
+      }
+
+      const formattedTranscripts = calls
+        .map(formatTranscript)
+        .filter(Boolean)
+        .join("\n");
+
       const prompt = preparePrompt(
         request,
         settings?.assistant_name || "Wai",
         caller,
-        callers
+        callers,
+        formattedTranscripts,
+        call.timezone
       );
+
       const completions = await createCompletion(prompt);
       const functionToCall = {
         name: "",
@@ -123,9 +164,9 @@ export default async (ws: WebSocket, req: Request) => {
           args.callId = call.id;
           args.timezone = call.timezone;
           args.callerId = caller?.id;
-  
+
           functions[functionToCall.name](ws, request, args, user);
-  
+
           await supabase.from("functions").insert({
             name: functionToCall.name,
             args,
