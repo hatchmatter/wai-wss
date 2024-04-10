@@ -10,7 +10,7 @@ const supabase = new SupabaseClient<Database>(
 );
 
 export default {
-  async updateCallerName(
+  async updateUserName(
     ws: WebSocket,
     request: RetellRequest,
     properties: any,

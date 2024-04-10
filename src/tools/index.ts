@@ -4,8 +4,8 @@ export default [
   {
     type: "function",
     function: {
-      name: "updateCallerName",
-      description: "Function that gets called when you get the person's name.",
+      name: "updateUserName",
+      description: "Function that gets called when the user tells you their name.",
       parameters: {
         type: "object",
         properties: {
@@ -41,7 +41,7 @@ export default [
   //   type: "function",
   //   function: {
   //     name: "getCurrentDateTime",
-  //     description: "Get the current day, date and/or time.",
+  //     description: "The function to call when the user asks for the current day, date, and/or time.",
   //     parameters: {
   //       type: "object",
   //       properties: {
@@ -55,7 +55,7 @@ export default [
   //             "The message you will say with the current day, date and/or time",
   //         },
   //       },
-  //       required: ["type", "timezone", "message"],
+  //       required: ["type", "message"],
   //     },
   //   },
   // },
