@@ -16,7 +16,7 @@ export default [
               "The message you will say after getting the person's name.",
           },
         },
-        required: ["name"],
+        required: ["name", "message"],
       },
     },
   },
