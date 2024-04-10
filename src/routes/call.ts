@@ -53,6 +53,13 @@ export default async (ws: WebSocket, req: Request) => {
     .select("name")
     .eq("user_id", user.id);
 
+  if (call?.current_caller_id || caller?.id) {
+    await supabase.from("callers_calls").upsert({
+      caller_id: call.current_caller_id ?? caller?.id,
+      call_id: call.id,
+    });
+  }
+
   const greeting = initialGreeting(settings, caller, lastCall);
 
   ws.send(JSON.stringify(greeting));
@@ -74,6 +81,10 @@ export default async (ws: WebSocket, req: Request) => {
         current_caller_id: call.current_caller_id ?? caller?.id,
       })
       .eq("id", call.id);
+    await supabase.from("callers_calls").upsert({
+      caller_id: call.current_caller_id ?? caller?.id,
+      call_id: call.id,
+    });
   });
 
   ws.on("message", async (data: RawData, isBinary: boolean) => {
@@ -116,7 +127,8 @@ export default async (ws: WebSocket, req: Request) => {
           Transcript: ${formatted}`;
       }
 
-      const formattedTranscripts = calls?.map(formatTranscript)
+      const formattedTranscripts = calls
+        ?.map(formatTranscript)
         .filter(Boolean)
         .join("\n");
 
