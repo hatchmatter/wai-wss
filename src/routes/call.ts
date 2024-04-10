@@ -116,8 +116,7 @@ export default async (ws: WebSocket, req: Request) => {
           Transcript: ${formatted}`;
       }
 
-      const formattedTranscripts = calls
-        .map(formatTranscript)
+      const formattedTranscripts = calls?.map(formatTranscript)
         .filter(Boolean)
         .join("\n");
 
