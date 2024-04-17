@@ -27,24 +27,22 @@ export default {
 
     if (error) {
       console.error("Error updating caller: ", error);
-      return;
     }
 
     const { error: associateError } = await supabase
       .from("callers_calls")
       .upsert({
-        caller_id: caller.id,
+        caller_id: caller?.id,
         call_id: properties.callId,
       });
 
     if (associateError) {
       console.error("Error associating callers_calls: ", associateError);
-      return;
     }
 
     const { error: callError } = await supabase
       .from("calls")
-      .update({ current_caller_id: caller.id })
+      .update({ current_caller_id: caller?.id })
       .eq("id", properties.callId);
 
     if (callError) {
