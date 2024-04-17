@@ -1,5 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
-import { format } from "date-fns";
+import { jsonrepair } from "jsonrepair";
+// import { format } from "date-fns";
+
 import { RetellRequest } from "../types";
 import type { Database } from "../types/supabase";
 import { buildResponse } from "../utils";
@@ -128,7 +130,6 @@ export default {
 
       if (error) {
         console.error("Error getting call: ", error);
-        return;
       }
 
       callerId = data.current_caller_id;
@@ -141,16 +142,15 @@ export default {
       .single();
 
     if (error) {
-      console.error("Error updating preferences: ", error);
-      return;
+      console.error("Error getting preferences: ", error);
     }
 
     // Wrapped in a try/catch block because sometimes the properties.preferences are not valid JSON
     // and we don't want to crash, just catch and move on. Not a big deal.
     // TODO: Add a check for valid JSON and try to fix it if it's not.
     try {
-      const newPreferences = JSON.parse(properties.preferences);
-      const existingPreferences: {} = caller.preferences || {};
+      const newPreferences = JSON.parse(jsonrepair(properties.preferences));
+      const existingPreferences: any = caller.preferences || {};
       const preferences = { ...existingPreferences, ...newPreferences };
 
       const { error: updateError } = await supabase
@@ -159,10 +159,10 @@ export default {
         .eq("id", callerId);
 
       if (updateError) {
-        console.error(updateError);
+        throw updateError;
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error updating preferences: ", e);
     }
 
     const response = buildResponse(request, properties.message);
