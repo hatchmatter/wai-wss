@@ -2,11 +2,12 @@ import datefns from "date-fns";
 import { RawData, WebSocket } from "ws";
 import { Request } from "express";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { jsonrepair } from "jsonrepair";
 
 import { RetellRequest } from "../types";
 import type { Database } from "../types/supabase";
 import { createCompletion, preparePrompt } from "../openai";
-import { buildResponse, getCurrentDateTime } from "../utils";
+import { buildResponse } from "../utils";
 import { functions } from "../tools";
 
 export default async (ws: WebSocket, req: Request) => {
@@ -171,18 +172,26 @@ export default async (ws: WebSocket, req: Request) => {
 
       if (functionToCall.name) {
         try {
-          const args = JSON.parse(functionToCall.arguments);
-          args.callId = call.id;
-          args.timezone = call.timezone;
-          args.callerId = caller?.id;
+          const args: any = {
+            callId: call.id,
+            timezone: call.timezone,
+            callerId: caller?.id,
+            ...JSON.parse(jsonrepair(functionToCall.arguments)),
+          };
 
-          functions[functionToCall.name](ws, request, args, user);
+          const fn = functions[functionToCall.name];
 
-          await supabase.from("functions").insert({
+          fn(ws, request, args, user);
+
+          const { error } = await supabase.from("functions").insert({
             name: functionToCall.name,
             args,
             call_id: call.id,
           });
+
+          if (error) {
+            console.error("Error inserting function: ", error);
+          }
         } catch (err) {
           console.error("Error in calling function: ", err);
         }

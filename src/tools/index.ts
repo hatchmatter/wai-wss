@@ -64,7 +64,7 @@ export default [
     function: {
       name: "updatePreferences",
       description:
-        "Update the child's preferences (likes, dislikes, favorites, etc) when you learn something new about them.",
+        "Update the user's preferences (likes, dislikes, favorites, etc) when you learn something new about them.",
       parameters: {
         type: "object",
         properties: {
