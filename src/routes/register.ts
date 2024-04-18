@@ -10,6 +10,10 @@ const retell = new RetellClient({
   apiKey: process.env.RETELL_API_KEY,
 });
 
+/**
+ * @deprecated This is now being handled by the next.js server.
+ * Modifications should be made in /api/call/register/route.ts in wai-web repo
+ */
 export default async (req: Request, res: Response) => {
   const { agentId, timezone, callerId } = req.body;
   const accessToken = req.headers.authorization.split(" ")[1];
