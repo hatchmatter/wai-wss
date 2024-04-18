@@ -54,9 +54,9 @@ export default async (ws: WebSocket, req: Request) => {
     .select("name")
     .eq("user_id", user.id);
 
-  if (call?.current_caller_id || caller?.id) {
+  if (call.current_caller_id || caller?.id) {
     await supabase.from("callers_calls").upsert({
-      caller_id: call.current_caller_id ?? caller?.id,
+      caller_id: call.current_caller_id || caller?.id,
       call_id: call.id,
     });
   }
