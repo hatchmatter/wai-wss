@@ -5,7 +5,8 @@ export default [
     type: "function",
     function: {
       name: "updateUserName",
-      description: "Function that gets called when the user tells you their name.",
+      description:
+        "Function that gets called when the user tells you their name.",
       parameters: {
         type: "object",
         properties: {
@@ -64,7 +65,7 @@ export default [
     function: {
       name: "updatePreferences",
       description:
-        "Update the user's preferences (likes, dislikes, favorites, etc) when you learn something new about them.",
+        "Function to call when the user mentions their likes, dislikes, things they love, or hate, their favorites, etc.",
       parameters: {
         type: "object",
         properties: {

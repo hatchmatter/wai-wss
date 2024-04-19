@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { jsonrepair } from "jsonrepair";
 import { RetellRequest, RetellResponse } from "./types";
 
 export function buildResponse(
@@ -49,4 +50,22 @@ export function getCurrentDateTime(timezone?: string) {
   return `
     Date and Time: ${format(now, "EEEE, MMMM d, yyyy 'at' h:mm a")}
   `;
+}
+
+export function argsToObj(args: string) {
+  try {
+    return JSON.parse(args);
+  } catch (err) {
+    console.info(
+      "Error parsing function arguments. Attempting to repair ",
+      err
+    );
+
+    try {
+      return JSON.parse(jsonrepair(args));
+    } catch (err) {
+      console.error("Error repairing JSON: ", err);
+      return {};
+    }
+  }
 }

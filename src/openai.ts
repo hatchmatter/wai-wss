@@ -11,7 +11,7 @@ const openai: OpenAI = new OpenAI({
   organization: process.env.OPENAI_ORGANIZATION_ID,
 });
 
-export async function createCompletion(
+export async function createStreamingCompletion(
   prompt: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 ) {
   const stream = await openai.chat.completions.create({
