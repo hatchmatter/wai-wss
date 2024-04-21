@@ -58,13 +58,14 @@ export function argsToObj(args: string) {
   } catch (err) {
     console.info(
       "Error parsing function arguments. Attempting to repair ",
-      err
+      err,
+      args
     );
 
     try {
       return JSON.parse(jsonrepair(args));
     } catch (err) {
-      console.error("Error repairing JSON: ", err);
+      console.error("Error repairing JSON: ", err, args);
       return {};
     }
   }

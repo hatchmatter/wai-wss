@@ -4,9 +4,9 @@ export default [
   {
     type: "function",
     function: {
-      name: "updateUserName",
+      name: "saveUserName",
       description:
-        "Function that gets called when the user tells you their name.",
+        "Function that gets called when the user says their name.",
       parameters: {
         type: "object",
         properties: {
@@ -14,7 +14,7 @@ export default [
           message: {
             type: "string",
             description:
-              "The message you will say after getting the person's name.",
+              "The message you will say after getting the person's name or switching to a new person.",
           },
         },
         required: ["name", "message"],

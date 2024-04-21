@@ -12,7 +12,7 @@ const supabase = new SupabaseClient<Database>(
 );
 
 export default {
-  async updateUserName(
+  async saveUserName(
     user: User,
     properties: any,
     ws: WebSocket,
@@ -36,7 +36,7 @@ export default {
       const { error: associateError } = await supabase
         .from("callers_calls")
         .upsert({
-          caller_id: caller?.id,
+          caller_id: caller.id,
           call_id: properties.callId,
         });
 
@@ -44,7 +44,7 @@ export default {
 
       const { error: callError } = await supabase
         .from("calls")
-        .update({ current_caller_id: caller?.id })
+        .update({ current_caller_id: caller.id })
         .eq("id", properties.callId);
 
       if (callError) throw callError;
@@ -62,15 +62,6 @@ export default {
     ws.send(
       JSON.stringify(buildResponse(request, properties.message, true, true))
     );
-
-    const { error } = await supabase
-      .from("calls")
-      .update({ ended_at: new Date().toISOString() })
-      .eq("id", properties.callId);
-
-    if (error) {
-      console.error("Error updating call end time: ", error);
-    }
   },
 
   // getCurrentDateTime(
@@ -116,35 +107,29 @@ export default {
   ) {
     ws.send(JSON.stringify(buildResponse(request, properties.message)));
 
-    // If it's the caller's first call, we need to get the current_caller_id from the call
-    // as it won't be passed in the properties.
-    const query = supabase
+    const { data: call, error: callError } = await supabase
       .from("calls")
       .select("current_caller_id")
       .eq("id", properties.callId)
       .single();
 
-    let callerId = properties.callerId;
-
-    if (!callerId) {
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error getting current_caller_id: ", error);
-        return;
-      }
-
-      callerId = data.current_caller_id;
+    if (callError) {
+      console.error(
+        "Error getting current_caller_id so cannot update preferences: ",
+        callError,
+        properties
+      );
+      return;
     }
 
     const { data: caller, error } = await supabase
       .from("callers")
       .select("preferences")
-      .eq("id", callerId)
+      .eq("id", call.current_caller_id)
       .single();
 
     if (error)
-      console.error("Error getting caller's existing preferences: ", error);
+      console.error("Could not get caller's existing preferences: ", error);
 
     const newPreferences = argsToObj(properties.preferences);
     const existingPreferences: any = caller.preferences || {};
@@ -153,9 +138,13 @@ export default {
     const { error: updateError } = await supabase
       .from("callers")
       .update({ preferences })
-      .eq("id", callerId);
+      .eq("id", call.current_caller_id);
 
     if (updateError)
-      console.error("Error updating preferences: ", updateError, properties);
+      console.error(
+        "Could not update caller's preferences: ",
+        updateError,
+        properties
+      );
   },
 };

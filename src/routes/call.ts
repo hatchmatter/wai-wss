@@ -25,6 +25,19 @@ export default async (ws: WebSocket, req: Request) => {
     data: { user },
   } = await supabase.auth.admin.getUserById(call.user_id);
 
+  const { data: settings } = await supabase
+    .from("settings")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  // all callers for this user. for setting up prompt to remember previous callers
+  const { data: callers } = await supabase
+    .from("callers")
+    .select("name")
+    .eq("user_id", user.id);
+
+  // last call with a caller
   const { data: lastCall } = await supabase
     .from("calls")
     .select("*")
@@ -32,8 +45,9 @@ export default async (ws: WebSocket, req: Request) => {
     .not("current_caller_id", "is", null)
     .order("ended_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
+  // all calls that have a caller and a transcript for this user
   const { data: calls } = await supabase
     .from("calls")
     .select("transcript, created_at")
@@ -42,26 +56,24 @@ export default async (ws: WebSocket, req: Request) => {
     .not("transcript", "is", null)
     .order("ended_at", { ascending: true });
 
-  const { data: settings } = await supabase
-    .from("settings")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
   const { data: caller } = await supabase
     .from("callers")
     .select("*")
     .eq("id", lastCall?.current_caller_id)
     .single();
 
-  const { data: callers } = await supabase
-    .from("callers")
-    .select("name")
-    .eq("user_id", user.id);
+  // associate the call with the caller.
+  // TODO: this should be done in the FE before the call is initiated
+  if (caller?.id) {
+    await supabase
+      .from("calls")
+      .update({
+        current_caller_id: caller?.id,
+      })
+      .eq("id", call.id);
 
-  if (call.current_caller_id || caller?.id) {
     await supabase.from("callers_calls").upsert({
-      caller_id: call.current_caller_id || caller?.id,
+      caller_id: caller.id,
       call_id: call.id,
     });
   }
@@ -77,10 +89,10 @@ export default async (ws: WebSocket, req: Request) => {
   ws.on("close", async (err) => {
     try {
       // we need to fetch the call again in case the caller changed during the call
-      const { data: call, error } = await supabase
+      const { data: _call, error } = await supabase
         .from("calls")
         .select("id, current_caller_id")
-        .eq("retell_id", req.params.id)
+        .eq("id", call.id)
         .single();
 
       if (error) throw error;
@@ -89,20 +101,10 @@ export default async (ws: WebSocket, req: Request) => {
         .from("calls")
         .update({
           ended_at: new Date().toISOString(),
-          current_caller_id: call.current_caller_id || caller?.id,
         })
-        .eq("id", call.id);
+        .eq("id", _call.id);
 
       if (updateCallError) throw updateCallError;
-
-      const { error: callAssociationError } = await supabase
-        .from("callers_calls")
-        .upsert({
-          caller_id: call.current_caller_id || caller?.id,
-          call_id: call.id,
-        });
-
-      if (callAssociationError) throw callAssociationError;
     } catch (e) {
       console.error("Error updating call after closing", e);
     }
@@ -183,11 +185,11 @@ export default async (ws: WebSocket, req: Request) => {
         });
 
         if (error) console.error("Error in saving function: ", error);
-
-        // reset functionToCall for the next iteration
-        functionToCall.arguments = "";
-        functionToCall.name = "";
       }
+
+      // reset functionToCall for the next iteration
+      functionToCall.arguments = "";
+      functionToCall.name = "";
     } catch (err) {
       console.error("Error in parsing LLM websocket message: ", err);
       ws.close(1002, "Cannot parse incoming message.");

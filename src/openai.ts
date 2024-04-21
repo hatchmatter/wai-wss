@@ -20,7 +20,7 @@ export async function createStreamingCompletion(
     // @ts-ignore
     tools,
     stream: true,
-    temperature: 0.3,
+    temperature: 0.4,
     frequency_penalty: 1,
     max_tokens: 500,
   });
