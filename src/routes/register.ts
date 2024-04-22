@@ -10,8 +10,12 @@ const retell = new RetellClient({
   apiKey: process.env.RETELL_API_KEY,
 });
 
+/**
+ * @deprecated This is now being handled by the next.js server.
+ * Modifications should be made in /api/call/register/route.ts in wai-web repo
+ */
 export default async (req: Request, res: Response) => {
-  const { agentId, timezone } = req.body;
+  const { agentId, timezone, callerId } = req.body;
   const accessToken = req.headers.authorization.split(" ")[1];
 
   if (!accessToken) res.status(403).json({ message: "Not authorized" });
@@ -43,6 +47,7 @@ export default async (req: Request, res: Response) => {
       user_id: user.id,
       retell_id: callDetail.callId,
       timezone,
+      current_caller_id: callerId
     });
 
     res.json(callDetail);

@@ -5,8 +5,8 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 import { RetellRequest } from "../types";
 import type { Database } from "../types/supabase";
-import { createCompletion, preparePrompt } from "../openai";
-import { buildResponse, getCurrentDateTime } from "../utils";
+import { createStreamingCompletion, preparePrompt } from "../openai";
+import { buildResponse, argsToObj } from "../utils";
 import { functions } from "../tools";
 
 export default async (ws: WebSocket, req: Request) => {
@@ -20,6 +20,24 @@ export default async (ws: WebSocket, req: Request) => {
     .select("*")
     .eq("retell_id", req.params.id)
     .single();
+
+  const {
+    data: { user },
+  } = await supabase.auth.admin.getUserById(call.user_id);
+
+  const { data: settings } = await supabase
+    .from("settings")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  // all callers for this user. for setting up prompt to remember previous callers
+  const { data: callers } = await supabase
+    .from("callers")
+    .select("name")
+    .eq("user_id", user.id);
+
+  // last call with a caller
   const { data: lastCall } = await supabase
     .from("calls")
     .select("*")
@@ -27,7 +45,9 @@ export default async (ws: WebSocket, req: Request) => {
     .not("current_caller_id", "is", null)
     .order("ended_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
+
+  // all calls that have a caller and a transcript for this user
   const { data: calls } = await supabase
     .from("calls")
     .select("transcript, created_at")
@@ -35,27 +55,25 @@ export default async (ws: WebSocket, req: Request) => {
     .eq("current_caller_id", lastCall?.current_caller_id)
     .not("transcript", "is", null)
     .order("ended_at", { ascending: true });
-  const {
-    data: { user },
-  } = await supabase.auth.admin.getUserById(call.user_id);
-  const { data: settings } = await supabase
-    .from("settings")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+
   const { data: caller } = await supabase
     .from("callers")
     .select("*")
     .eq("id", lastCall?.current_caller_id)
     .single();
-  const { data: callers } = await supabase
-    .from("callers")
-    .select("name")
-    .eq("user_id", user.id);
 
-  if (call?.current_caller_id || caller?.id) {
+  // associate the call with the caller.
+  // TODO: this should be done in the FE before the call is initiated
+  if (caller?.id) {
+    await supabase
+      .from("calls")
+      .update({
+        current_caller_id: caller?.id,
+      })
+      .eq("id", call.id);
+
     await supabase.from("callers_calls").upsert({
-      caller_id: call.current_caller_id ?? caller?.id,
+      caller_id: caller.id,
       call_id: call.id,
     });
   }
@@ -69,22 +87,27 @@ export default async (ws: WebSocket, req: Request) => {
   });
 
   ws.on("close", async (err) => {
-    const { data: call } = await supabase
-      .from("calls")
-      .select("id, current_caller_id")
-      .eq("retell_id", req.params.id)
-      .single();
-    await supabase
-      .from("calls")
-      .update({
-        ended_at: new Date().toISOString(),
-        current_caller_id: call.current_caller_id ?? caller?.id,
-      })
-      .eq("id", call.id);
-    await supabase.from("callers_calls").upsert({
-      caller_id: call.current_caller_id ?? caller?.id,
-      call_id: call.id,
-    });
+    try {
+      // we need to fetch the call again in case the caller changed during the call
+      const { data: _call, error } = await supabase
+        .from("calls")
+        .select("id, current_caller_id")
+        .eq("id", call.id)
+        .single();
+
+      if (error) throw error;
+
+      const { error: updateCallError } = await supabase
+        .from("calls")
+        .update({
+          ended_at: new Date().toISOString(),
+        })
+        .eq("id", _call.id);
+
+      if (updateCallError) throw updateCallError;
+    } catch (e) {
+      console.error("Error updating call after closing", e);
+    }
   });
 
   ws.on("message", async (data: RawData, isBinary: boolean) => {
@@ -101,32 +124,6 @@ export default async (ws: WebSocket, req: Request) => {
         return;
       }
 
-      function formatTranscript(call, i) {
-        const { transcript } = call;
-        const formatted = transcript
-          ?.map((t) => {
-            if (t.content.length < 10) {
-              return null;
-            }
-
-            return `${t.role}: ${t.content}\n`;
-          })
-          .filter(Boolean)
-          .join("");
-
-        if (!formatted) {
-          return null;
-        }
-
-        return `
-          Call: #${i}
-          Took place at: ${datefns.format(
-            new Date(call.created_at),
-            "EEEE, MMMM d, yyyy 'at' h:mm a"
-          )}
-          Transcript: ${formatted}`;
-      }
-
       const formattedTranscripts = calls
         ?.map(formatTranscript)
         .filter(Boolean)
@@ -141,15 +138,15 @@ export default async (ws: WebSocket, req: Request) => {
         call.timezone
       );
 
-      const completions = await createCompletion(prompt);
+      const stream = await createStreamingCompletion(prompt);
       const functionToCall = {
         name: "",
         arguments: "",
       };
 
-      for await (const completion of completions) {
-        if (completion.choices.length >= 1) {
-          const { delta } = completion.choices[0];
+      for await (const completionChunk of stream) {
+        if (completionChunk.choices.length >= 1) {
+          const { delta } = completionChunk.choices[0];
 
           if (delta.tool_calls) {
             const tool_call = delta.tool_calls[0];
@@ -162,38 +159,69 @@ export default async (ws: WebSocket, req: Request) => {
           }
 
           if (delta.content) {
-            const res = buildResponse(request, delta.content, false);
-
-            ws.send(JSON.stringify(res));
+            ws.send(
+              JSON.stringify(buildResponse(request, delta.content, false))
+            );
           }
         }
       }
 
       if (functionToCall.name) {
-        try {
-          const args = JSON.parse(functionToCall.arguments);
-          args.callId = call.id;
-          args.timezone = call.timezone;
-          args.callerId = caller?.id;
+        const args: any = {
+          callId: call.id,
+          timezone: call.timezone,
+          callerId: caller?.id,
+          ...argsToObj(functionToCall.arguments),
+        };
 
-          functions[functionToCall.name](ws, request, args, user);
+        const fn = functions[functionToCall.name];
 
-          await supabase.from("functions").insert({
-            name: functionToCall.name,
-            args,
-            call_id: call.id,
-          });
-        } catch (err) {
-          console.error("Error in calling function: ", err);
-        }
+        fn(user, args, ws, request);
+
+        const { error } = await supabase.from("functions").insert({
+          name: functionToCall.name,
+          args,
+          call_id: call.id,
+        });
+
+        if (error) console.error("Error in saving function: ", error);
       }
+
+      // reset functionToCall for the next iteration
+      functionToCall.arguments = "";
+      functionToCall.name = "";
     } catch (err) {
       console.error("Error in parsing LLM websocket message: ", err);
-      // ws.send(JSON.stringify(buildResponse(request, "I'm sorry, I didn't understand that. Can you please repeat?")));
       ws.close(1002, "Cannot parse incoming message.");
     }
   });
 };
+
+function formatTranscript(call, i) {
+  const { transcript } = call;
+  const formatted = transcript
+    ?.map((t) => {
+      if (t.content.length < 10) {
+        return null;
+      }
+
+      return `${t.role}: ${t.content}\n`;
+    })
+    .filter(Boolean)
+    .join("");
+
+  if (!formatted) {
+    return null;
+  }
+
+  return `
+    Call: #${i}
+    Took place at: ${datefns.format(
+      new Date(call.created_at),
+      "EEEE, MMMM d, yyyy 'at' h:mm a"
+    )}
+    Transcript: ${formatted}`;
+}
 
 function initialGreeting(settings: any, caller: any, lastCall: any) {
   let res;

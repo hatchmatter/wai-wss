@@ -11,7 +11,7 @@ const openai: OpenAI = new OpenAI({
   organization: process.env.OPENAI_ORGANIZATION_ID,
 });
 
-export async function createCompletion(
+export async function createStreamingCompletion(
   prompt: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 ) {
   const stream = await openai.chat.completions.create({
@@ -20,7 +20,7 @@ export async function createCompletion(
     // @ts-ignore
     tools,
     stream: true,
-    temperature: 0.3,
+    temperature: 0.4,
     frequency_penalty: 1,
     max_tokens: 500,
   });
