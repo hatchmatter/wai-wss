@@ -53,6 +53,18 @@ export function getCurrentDateTime(timezone?: string) {
 }
 
 export function argsToObj(args: string) {
+  /**
+   * sometimes args come in like this:
+   * "{\"favoriteDog\":\"Corgi\",\"likesSkiing\":true}", "message": "I've updated your preferences, Bob! Skiing is such an exciting sport. Do you have a favorite place where you like to go skiing?"}{"preferences": "{\"likesMakingCookies\":true,\"favoriteCookie\":\"chocolate chip\"}", "message": ""}
+   * which is invalid JSON due to "}{" in the middle.
+   */
+  args = args.replace(/}{/g, "}(%%){");
+
+  if (args.split("(%%)").length > 1) {
+    let tmp = args.split("(%%)");
+    args = tmp[0];
+  }
+
   try {
     return JSON.parse(args);
   } catch (err) {

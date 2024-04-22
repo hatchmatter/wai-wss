@@ -139,10 +139,9 @@ export default async (ws: WebSocket, req: Request) => {
       );
 
       const stream = await createStreamingCompletion(prompt);
-      const functionToCall = {
-        name: "",
-        arguments: "",
-      };
+      
+      let fnName;
+      let fnArgs: string[] = [];
 
       for await (const completionChunk of stream) {
         if (completionChunk.choices.length >= 1) {
@@ -152,10 +151,10 @@ export default async (ws: WebSocket, req: Request) => {
             const tool_call = delta.tool_calls[0];
 
             if (tool_call.function.name) {
-              functionToCall.name = tool_call.function.name;
+              fnName = tool_call.function.name;
             }
 
-            functionToCall.arguments += tool_call.function.arguments;
+            fnArgs.push(tool_call.function.arguments);
           }
 
           if (delta.content) {
@@ -166,30 +165,28 @@ export default async (ws: WebSocket, req: Request) => {
         }
       }
 
-      if (functionToCall.name) {
+      if (fnName) {
         const args: any = {
           callId: call.id,
           timezone: call.timezone,
           callerId: caller?.id,
-          ...argsToObj(functionToCall.arguments),
+          ...argsToObj([...fnArgs].join("")), // the array has to be cloned
         };
 
-        const fn = functions[functionToCall.name];
+        fnArgs = []; // reset the arguments
+
+        const fn = functions[fnName];
 
         fn(user, args, ws, request);
 
         const { error } = await supabase.from("functions").insert({
-          name: functionToCall.name,
+          name: fnName,
           args,
           call_id: call.id,
         });
 
         if (error) console.error("Error in saving function: ", error);
       }
-
-      // reset functionToCall for the next iteration
-      functionToCall.arguments = "";
-      functionToCall.name = "";
     } catch (err) {
       console.error("Error in parsing LLM websocket message: ", err);
       ws.close(1002, "Cannot parse incoming message.");

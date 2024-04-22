@@ -6,7 +6,7 @@ export default [
     function: {
       name: "saveUserName",
       description:
-        "Function that gets called when the user says their name.",
+        "Function that gets called when the user lets you know their name.",
       parameters: {
         type: "object",
         properties: {
@@ -77,7 +77,7 @@ export default [
           message: {
             type: "string",
             description:
-              "The message you will say when updating the child's preferences",
+              "The message you will say when the user tells you their preferences.",
           },
         },
         required: ["preferences", "message"],
