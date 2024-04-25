@@ -50,11 +50,10 @@ export default async (ws: WebSocket, req: Request) => {
   // all calls that have a caller and a transcript for this user
   const { data: calls } = await supabase
     .from("calls")
-    .select("transcript, created_at")
+    .select("transcript, transcript_text, summary, created_at")
     .eq("user_id", call.user_id)
     .eq("current_caller_id", lastCall?.current_caller_id)
-    .not("transcript", "is", null)
-    .order("ended_at", { ascending: true });
+    .order("created_at", { ascending: true });
 
   const { data: caller } = await supabase
     .from("callers")
@@ -139,7 +138,7 @@ export default async (ws: WebSocket, req: Request) => {
       );
 
       const stream = await createStreamingCompletion(prompt);
-      
+
       let fnName;
       let fnArgs: string[] = [];
 
@@ -195,29 +194,50 @@ export default async (ws: WebSocket, req: Request) => {
 };
 
 function formatTranscript(call, i) {
-  const { transcript } = call;
-  const formatted = transcript
-    ?.map((t) => {
-      if (t.content.length < 10) {
-        return null;
-      }
+  const { transcript, transcript_text, summary } = call;
+  let formatted: string;
+  const callNum = i;
+  const callDate = datefns.format(
+    new Date(call.created_at),
+    "EEEE, MMMM d, yyyy 'at' h:mm a"
+  );
+  const difference = datefns.differenceInDays(
+    new Date(),
+    new Date(call.created_at)
+  );
 
-      return `${t.role}: ${t.content}\n`;
-    })
-    .filter(Boolean)
-    .join("");
+  // If the call happened a while ago then the AI's memory should fade.
+  if (summary && difference > 7) {
+    return `
+      Call: #${callNum}
+      Took place at: ${callDate}
+      Summary: ${summary}`;
+  }
 
-  if (!formatted) {
+  // Prefer transcript text for now.
+  if (transcript_text) {
+    formatted = transcript_text;
+  } else {
+    formatted = transcript
+      ?.map((t) => {
+        if (t.content.length < 10) {
+          return null;
+        }
+
+        return `${t.role}: ${t.content}\n`;
+      })
+      .filter(Boolean)
+      .join("");
+  }
+
+  if (!formatted || !formatted.toLowerCase().match(/user:/)) {
     return null;
   }
 
   return `
     Call: #${i}
-    Took place at: ${datefns.format(
-      new Date(call.created_at),
-      "EEEE, MMMM d, yyyy 'at' h:mm a"
-    )}
-    Transcript: ${formatted}`;
+    Took place at: ${callDate}
+    Transcript:\n ${formatted}`;
 }
 
 function initialGreeting(settings: any, caller: any, lastCall: any) {

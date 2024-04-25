@@ -122,35 +122,44 @@ export type Database = {
       }
       calls: {
         Row: {
+          audio_url: string | null
           created_at: string
           current_caller_id: string | null
           ended_at: string | null
           id: string
           retell_id: string
+          summary: string | null
           timezone: string | null
           transcript: Json | null
+          transcript_text: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string
           current_caller_id?: string | null
           ended_at?: string | null
           id?: string
           retell_id: string
+          summary?: string | null
           timezone?: string | null
           transcript?: Json | null
+          transcript_text?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          audio_url?: string | null
           created_at?: string
           current_caller_id?: string | null
           ended_at?: string | null
           id?: string
           retell_id?: string
+          summary?: string | null
           timezone?: string | null
           transcript?: Json | null
+          transcript_text?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -211,16 +220,22 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          invited: boolean
+          invited_on: string | null
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
+          invited?: boolean
+          invited_on?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          invited?: boolean
+          invited_on?: string | null
         }
         Relationships: []
       }

@@ -5,8 +5,10 @@ import tools from "./tools";
 import { Json } from "./types/supabase";
 
 const MODEL = "gpt-4-turbo-preview";
+// const MODEL = "LLaMA_CPP";
 
 const openai: OpenAI = new OpenAI({
+  // baseURL: "http://localhost:9000/v1", // uncomment to run llamafile https://github.com/Mozilla-Ocho/llamafile
   apiKey: process.env.OPENAI_APIKEY,
   organization: process.env.OPENAI_ORGANIZATION_ID,
 });
