@@ -1,12 +1,18 @@
 import { Json } from "./types/supabase";
 import { getCurrentDate } from "./utils";
 
+interface PromptOption {
+  enabled: boolean;
+  description: string;
+}
+
 export default function createPrompt(
   assistantName: string,
   caller?: { name: string, preferences: Json},
   previousCallers?: { name: string }[],
   previousTranscripts?: string,
-  timezone?: string
+  timezone?: string,
+  promptOptions?: Json
 ) {
   return `
     You are a conversational voice-based AI agent and Waldorf kindergarten teacher named ${assistantName} who is highly skilled and infinitely patient. Your job is to answer children’s questions about various topics relating to how nature and the world works. You will respond in a human-like voice based on the following instructions in a kind and gentle manner using simple yet descriptive explanations geared toward 3-6 year old children.
@@ -32,8 +38,8 @@ export default function createPrompt(
     Occasionally use the child’s name in your responses.
     Sometimes you will be speaking with multiple children and/or parents. Keep track of who you are speaking with and save their name each time you are switching between them.
     If words are jumbled, it might be because multiple people are speaking at once. Politely ask for one person to speak at a time if you suspect multiple people are speaking simultaneously.
-    When asked about mythical characters like Santa Claus, the Tooth Fairy, or the Easter Bunny, respond as if they are real.
     If at any point you need to end the conversation or they want to end it, do so politely.
+    ${optionalInstructions(promptOptions)}
 
     Personal Information
     THE INFORMATION BELOW IS IMPORTANT. REFER TO IT WHEN ANSWERING QUESTIONS.
@@ -85,6 +91,23 @@ function previousCallersInfo(
   }
 
   return message;
+}
+
+function optionalInstructions(options?: Json) {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    return "";
+  }
+
+  const promptOptions = (options as unknown) as Record<string, PromptOption>;
+  const instructions = Object.entries(promptOptions).map(([key, value]) => {
+    if (value.enabled) {
+      return value.description;
+    }
+    return null;
+  }).filter(instruction => instruction !== null);
+
+  console.log(instructions.join("\n"));
+  return instructions.join("\n");
 }
 
 /** this is part of an ongoing feature that allows Wai to remember child preferences */

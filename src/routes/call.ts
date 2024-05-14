@@ -134,7 +134,8 @@ export default async (ws: WebSocket, req: Request) => {
         caller,
         callers,
         formattedTranscripts,
-        call.timezone
+        call.timezone,
+        settings?.prompt_options || `{}`
       );
 
       const stream = await createStreamingCompletion(prompt);

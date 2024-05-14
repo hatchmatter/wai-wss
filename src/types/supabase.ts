@@ -278,6 +278,7 @@ export type Database = {
           created_at: string
           id: string
           updated_at: string | null
+          prompt_options: Json
         }
         Insert: {
           agent_id?: string | null
@@ -285,6 +286,7 @@ export type Database = {
           created_at?: string
           id: string
           updated_at?: string | null
+          prompt_options?: Json
         }
         Update: {
           agent_id?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           created_at?: string
           id?: string
           updated_at?: string | null
+          prompt_options?: Json
         }
         Relationships: [
           {

@@ -36,8 +36,10 @@ export function preparePrompt(
   caller?: { name: string; preferences: Json },
   callers?: { name: string }[],
   previousTranscripts?: string,
-  timezone?: string
+  timezone?: string,
+  promptOptions?: Json
 ) {
+
   const transcript = createTranscript(request.transcript);
   const requestMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
     [
@@ -48,7 +50,8 @@ export function preparePrompt(
           caller,
           callers,
           previousTranscripts,
-          timezone
+          timezone,
+          promptOptions
         ),
       },
     ];
