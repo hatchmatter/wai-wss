@@ -106,7 +106,6 @@ function optionalInstructions(options?: Json) {
     return null;
   }).filter(instruction => instruction !== null);
 
-  console.log(instructions.join("\n"));
   return instructions.join("\n");
 }
 
