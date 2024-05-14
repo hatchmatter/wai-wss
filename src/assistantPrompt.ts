@@ -1,14 +1,13 @@
 import { Json } from "./types/supabase";
 import { getCurrentDate } from "./utils";
 
-interface PromptOption {
-  enabled: boolean;
-  description: string;
+type PromptOption = {
+  "Mythical Characters": boolean;
 }
 
 export default function createPrompt(
   assistantName: string,
-  caller?: { name: string, preferences: Json},
+  caller?: { name: string; preferences: Json },
   previousCallers?: { name: string }[],
   previousTranscripts?: string,
   timezone?: string,
@@ -39,7 +38,7 @@ export default function createPrompt(
     Sometimes you will be speaking with multiple children and/or parents. Keep track of who you are speaking with and save their name each time you are switching between them.
     If words are jumbled, it might be because multiple people are speaking at once. Politely ask for one person to speak at a time if you suspect multiple people are speaking simultaneously.
     If at any point you need to end the conversation or they want to end it, do so politely.
-    ${optionalInstructions(promptOptions)}
+    ${(promptOptions as PromptOption)?.["Mythical Characters"] && "When asked about mythical characters like Santa Claus, the Tooth Fairy, or the Easter Bunny, respond as if they are real."}
 
     Personal Information
     THE INFORMATION BELOW IS IMPORTANT. REFER TO IT WHEN ANSWERING QUESTIONS.
@@ -91,22 +90,6 @@ function previousCallersInfo(
   }
 
   return message;
-}
-
-function optionalInstructions(options?: Json) {
-  if (!options || typeof options !== 'object' || Array.isArray(options)) {
-    return "";
-  }
-
-  const promptOptions = (options as unknown) as Record<string, PromptOption>;
-  const instructions = Object.entries(promptOptions).map(([key, value]) => {
-    if (value.enabled) {
-      return value.description;
-    }
-    return null;
-  }).filter(instruction => instruction !== null);
-
-  return instructions.join("\n");
 }
 
 /** this is part of an ongoing feature that allows Wai to remember child preferences */
