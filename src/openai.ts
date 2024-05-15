@@ -30,6 +30,18 @@ export async function createStreamingCompletion(
   return stream;
 }
 
+export async function createImageCompletion(prompt: string) {
+  const response = await openai.images.generate({
+    model: "dall-e-3",
+    prompt,
+    n: 1,
+    size: "1792x1024",
+  });
+  const image_url = response.data[0].url;
+
+  return image_url;
+}
+
 export function preparePrompt(
   request: RetellRequest,
   assistantName: string,

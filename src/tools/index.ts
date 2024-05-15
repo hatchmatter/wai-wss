@@ -84,4 +84,23 @@ export default [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "storyMode",
+      description:
+        "Function to call when the user wants to hear a story.",
+      parameters: {
+        type: "object",
+        properties: {
+          message: {
+            type: "string",
+            description:
+              "Acknowledgement message to say before starting the story.",
+          },
+        },
+        required: ["message"],
+      },
+    }
+  }
 ];

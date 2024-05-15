@@ -5,7 +5,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 import { RetellRequest } from "../types";
 import type { Database } from "../types/supabase";
-import { createStreamingCompletion, preparePrompt } from "../openai";
+import { createStreamingCompletion, preparePrompt, createImageCompletion } from "../openai";
 import { buildResponse, argsToObj } from "../utils";
 import { functions } from "../tools";
 
@@ -77,6 +77,13 @@ export default async (ws: WebSocket, req: Request) => {
     });
   }
 
+  console.log(await createImageCompletion("Once upon a time, in a lush green forest filled with tall trees and colorful flowers, there lived a curious little porcupine named Poppy. Poppy was not like other porcupines; she had an adventurous spirit and loved exploring every nook and cranny of the forest."));
+  console.log(await createImageCompletion("One sunny morning, Poppy decided it was the perfect day for an adventure. She packed her favorite snacks, a map of the forest she had drawn herself, and set out to find the legendary Crystal Cave that was said to sparkle with all the colors of the rainbow."));
+  console.log(await createImageCompletion("As she waddled through the forest, Poppy met various animals who warned her about the challenges ahead. \"The path is tricky,\" said Oliver Owl. \"And you must solve riddles,\" chirped Ruby Robin. But Poppy wasn't deterred; if anything, their warnings made her even more determined."));
+  console.log(await createImageCompletion("After hours of trekking through thick bushes and over mossy logs, Poppy arrived at a clearing where sunlight danced on what appeared to be...a cave entrance! It was hidden behind some thorny bushes but sparkled enticingly in the light."));
+  console.log(await createImageCompletion("Just as Ruby Robin had warned, guarding the entrance was Gideon Guardhog, keeper of riddles. \"To enter,\" Gideon announced in his deep voice, \"you must answer my riddle.\""));
+  console.log(await createImageCompletion("Poppy listened intently as Gideon posed his challenge: \"I speak without a mouth and hear without ears. I have no body but come alive with wind. What am I?\""));
+
   const greeting = initialGreeting(settings, caller, lastCall);
 
   ws.send(JSON.stringify(greeting));
@@ -108,6 +115,8 @@ export default async (ws: WebSocket, req: Request) => {
       console.error("Error updating call after closing", e);
     }
   });
+
+  let isStoryMode = false;
 
   ws.on("message", async (data: RawData, isBinary: boolean) => {
     if (isBinary) {
@@ -141,6 +150,7 @@ export default async (ws: WebSocket, req: Request) => {
 
       let fnName;
       let fnArgs: string[] = [];
+      const fullResponse = [];
 
       for await (const completionChunk of stream) {
         if (completionChunk.choices.length >= 1) {
@@ -151,12 +161,19 @@ export default async (ws: WebSocket, req: Request) => {
 
             if (tool_call.function.name) {
               fnName = tool_call.function.name;
+
+              if (fnName === "storyMode") {
+                isStoryMode = true;
+              }
             }
 
             fnArgs.push(tool_call.function.arguments);
           }
 
           if (delta.content) {
+            if (isStoryMode) {
+              fullResponse.push(delta.content);
+            }
             ws.send(
               JSON.stringify(buildResponse(request, delta.content, false))
             );

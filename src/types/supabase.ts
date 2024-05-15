@@ -127,6 +127,7 @@ export type Database = {
           current_caller_id: string | null
           ended_at: string | null
           id: string
+          mode: string
           retell_id: string
           summary: string | null
           timezone: string | null
@@ -141,6 +142,7 @@ export type Database = {
           current_caller_id?: string | null
           ended_at?: string | null
           id?: string
+          mode?: string
           retell_id: string
           summary?: string | null
           timezone?: string | null
@@ -155,6 +157,7 @@ export type Database = {
           current_caller_id?: string | null
           ended_at?: string | null
           id?: string
+          mode?: string
           retell_id?: string
           summary?: string | null
           timezone?: string | null
@@ -211,6 +214,41 @@ export type Database = {
             columns: ["call_id"]
             isOneToOne: false
             referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      images: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          story_id: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          story_id: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          story_id?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "images_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -305,6 +343,48 @@ export type Database = {
             foreignKeyName: "settings_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stories: {
+        Row: {
+          call_id: string
+          created_at: string
+          id: string
+          transcript: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          id?: string
+          transcript: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          id?: string
+          transcript?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },

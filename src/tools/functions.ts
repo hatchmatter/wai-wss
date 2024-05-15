@@ -147,4 +147,16 @@ export default {
         properties
       );
   },
+  async storyMode(
+    user: any,
+    properties: any,
+    ws: WebSocket,
+    request: RetellRequest
+  ) {
+    ws.send(JSON.stringify(buildResponse(request, properties.message)));
+
+    await supabase
+      .from("calls")
+      .update({ mode: "story" });
+  }
 };
