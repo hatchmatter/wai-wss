@@ -3,7 +3,7 @@ import { RawData, WebSocket } from "ws";
 import { Request } from "express";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-import { RetellRequest } from "../types";
+import { CustomLlmRequest, CustomLlmResponse } from "../types";
 import type { Database } from "../types/supabase";
 import { createStreamingCompletion, preparePrompt, createImageCompletion } from "../openai";
 import { buildResponse, argsToObj } from "../utils";
@@ -77,16 +77,36 @@ export default async (ws: WebSocket, req: Request) => {
     });
   }
 
+<<<<<<< Updated upstream
   console.log(await createImageCompletion("Once upon a time, in a lush green forest filled with tall trees and colorful flowers, there lived a curious little porcupine named Poppy. Poppy was not like other porcupines; she had an adventurous spirit and loved exploring every nook and cranny of the forest."));
   console.log(await createImageCompletion("One sunny morning, Poppy decided it was the perfect day for an adventure. She packed her favorite snacks, a map of the forest she had drawn herself, and set out to find the legendary Crystal Cave that was said to sparkle with all the colors of the rainbow."));
   console.log(await createImageCompletion("As she waddled through the forest, Poppy met various animals who warned her about the challenges ahead. \"The path is tricky,\" said Oliver Owl. \"And you must solve riddles,\" chirped Ruby Robin. But Poppy wasn't deterred; if anything, their warnings made her even more determined."));
   console.log(await createImageCompletion("After hours of trekking through thick bushes and over mossy logs, Poppy arrived at a clearing where sunlight danced on what appeared to be...a cave entrance! It was hidden behind some thorny bushes but sparkled enticingly in the light."));
   console.log(await createImageCompletion("Just as Ruby Robin had warned, guarding the entrance was Gideon Guardhog, keeper of riddles. \"To enter,\" Gideon announced in his deep voice, \"you must answer my riddle.\""));
   console.log(await createImageCompletion("Poppy listened intently as Gideon posed his challenge: \"I speak without a mouth and hear without ears. I have no body but come alive with wind. What am I?\""));
+=======
+  // const config: any = {
+  //   response_type: "config",
+  //   config: {
+  //     auto_reconnect: true,
+  //     // call_details: true,
+  //   },
+  // };
+  // ws.send(JSON.stringify(config));
+>>>>>>> Stashed changes
 
   const greeting = initialGreeting(settings, caller, lastCall);
 
   ws.send(JSON.stringify(greeting));
+
+  ws.send(JSON.stringify({
+    "response_type": "metadata",
+    "metadata": {
+      "story_mode": false,
+    }
+  }));
+
+  
 
   ws.on("error", (err) => {
     console.error("Error received in LLM websocket client: ", err);
@@ -125,7 +145,18 @@ export default async (ws: WebSocket, req: Request) => {
     }
 
     try {
-      const request: RetellRequest = JSON.parse(data.toString());
+      const request: CustomLlmRequest = JSON.parse(data.toString());
+
+      console.log(request)
+
+      if (request.interaction_type === "ping_pong") {
+        let pingpongResponse: CustomLlmResponse = {
+          response_type: "ping_pong",
+          timestamp: request.timestamp,
+        };
+        ws.send(JSON.stringify(pingpongResponse));
+        return;
+      }
 
       if (request.interaction_type === "update_only") {
         // process live transcript update if needed
@@ -162,9 +193,19 @@ export default async (ws: WebSocket, req: Request) => {
             if (tool_call.function.name) {
               fnName = tool_call.function.name;
 
+<<<<<<< Updated upstream
               if (fnName === "storyMode") {
                 isStoryMode = true;
               }
+=======
+              ws.send(JSON.stringify({
+                "response_type": "metadata",
+                "metadata": {
+                  "story_mode": false,
+                  "tool_called": "true",
+                }
+              }));
+>>>>>>> Stashed changes
             }
 
             fnArgs.push(tool_call.function.arguments);

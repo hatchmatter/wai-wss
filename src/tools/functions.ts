@@ -2,7 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 // import { format } from "date-fns";
 
-import { RetellRequest } from "../types";
+import { CustomLlmRequest } from "../types";
 import { buildResponse, argsToObj } from "../utils";
 import type { Database } from "../types/supabase";
 
@@ -16,7 +16,7 @@ export default {
     user: User,
     properties: any,
     ws: WebSocket,
-    request: RetellRequest
+    request: CustomLlmRequest
   ) {
     // Preemptively send the message to the user
     ws.send(JSON.stringify(buildResponse(request, properties.message)));
@@ -57,7 +57,7 @@ export default {
     user: any,
     properties: any,
     ws: WebSocket,
-    request: RetellRequest
+    request: CustomLlmRequest
   ) {
     ws.send(
       JSON.stringify(buildResponse(request, properties.message, true, true))
@@ -66,7 +66,7 @@ export default {
 
   // getCurrentDateTime(
   //   ws: WebSocket,
-  //   request: RetellRequest,
+  //   request: CustomLlmRequest,
   //   properties: any,
   //   user: any
   // ) {
@@ -103,7 +103,7 @@ export default {
     user: any,
     properties: any,
     ws: WebSocket,
-    request: RetellRequest
+    request: CustomLlmRequest
   ) {
     ws.send(JSON.stringify(buildResponse(request, properties.message)));
 
