@@ -96,7 +96,7 @@ export default [
           message: {
             type: "string",
             description:
-              "Acknowledgement message to say before starting the story.",
+              "Ask the user what kind of story they want to hear.",
           },
         },
         required: ["message"],

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development nodemon src/index.ts",
+    "dev:win": "set NODE_ENV=development&& nodemon src/index",
     "start": "NODE_ENV=production node dist/index.js",
     "clean": "rm -rf dist",
     "build": "tsc"

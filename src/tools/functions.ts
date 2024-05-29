@@ -153,6 +153,7 @@ export default {
     ws: WebSocket,
     request: RetellRequest
   ) {
+    // console.log('storyMode', properties.message);
     ws.send(JSON.stringify(buildResponse(request, properties.message)));
 
     await supabase
