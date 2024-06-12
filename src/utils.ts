@@ -1,15 +1,16 @@
 import { format } from "date-fns";
 import { jsonrepair } from "jsonrepair";
-import { RetellRequest, RetellResponse } from "./types";
+import { ResponseRequiredRequest, ReminderRequiredRequest, CustomLlmRequest, CustomLlmResponse } from "./types";
 
 export function buildResponse(
-  request: RetellRequest,
+  request: any,
   content: string,
   contentComplete: boolean = true,
   endCall: boolean = false
-): RetellResponse {
+): CustomLlmResponse {
   return {
     response_id: request.response_id,
+    response_type: "response",
     content,
     content_complete: contentComplete,
     end_call: endCall,

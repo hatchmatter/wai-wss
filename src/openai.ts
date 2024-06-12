@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { RetellRequest, Utterance } from "./types";
+import { ResponseRequiredRequest, ReminderRequiredRequest, CallDetailsRequest, Utterance } from "./types";
 import createAssistantPrompt from "./assistantPrompt";
 import tools from "./tools";
 import { Json } from "./types/supabase";
@@ -87,7 +87,7 @@ export async function createImageCompletion(prompt: string) {
 }
 
 export function preparePrompt(
-  request: RetellRequest,
+  request: any,
   assistantName: string,
   caller?: { name: string; preferences: Json },
   callers?: { name: string }[],

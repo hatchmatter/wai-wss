@@ -3,13 +3,15 @@ import { RawData, WebSocket } from "ws";
 import { Request } from "express";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-import { RetellRequest } from "../types";
+import { CustomLlmRequest, CustomLlmResponse } from "../types";
 import type { Database } from "../types/supabase";
 import { createStreamingCompletion, preparePrompt, createImagePrompt, createImageCompletion } from "../openai";
 import { buildResponse, argsToObj } from "../utils";
 import { functions } from "../tools";
 
 let isStoryMode = false;
+// let storyTranscript = [];
+// let capturingStory = false;
 
 export default async (ws: WebSocket, req: Request) => {
   const supabase = new SupabaseClient<Database>(
@@ -78,41 +80,6 @@ export default async (ws: WebSocket, req: Request) => {
       call_id: call.id,
     });
   }
-
-  const emitMetadataEvent = (event, data) => {
-    //if (ws.readyState === WebSocket.OPEN) {
-      console.log(`Emitting metadata event: ${event}`, data);
-      ws.send(JSON.stringify({ type: 'metadata', event, data }));
-    //} else {
-      //console.error('WebSocket is not open. Cannot send metadata event.');
-   //}
-  };
-
-  // Check call mode and emit event if in story mode
-  const checkAndEmitStoryMode = async () => {
-    console.log("Beginning of check and emit");
-    // const { data: _call } = await supabase
-    //   .from('calls')
-    //   .select('mode')
-    //   .eq('id', call.id)
-    //   .single();
-
-    // if (_call?.mode && _call.mode === 'story') {
-    //   emitMetadataEvent('storyMode', { isStoryMode: true });
-    // }
-    // else {
-    //   emitMetadataEvent('storyMode', { isStoryMode: false });
-    // }
-    try {
-      emitMetadataEvent('storyMode', { isStoryMode: isStoryMode });
-    }
-    catch {
-      console.log("ERROR EMITTING METADATA");
-    }
-  };
-
-  // Emit story mode event if the current mode is story
-  //checkAndEmitStoryMode();
 
 //   const prompt1 = `**Illustration Prompt:**
 
@@ -189,6 +156,15 @@ export default async (ws: WebSocket, req: Request) => {
 
   ws.send(JSON.stringify(greeting));
 
+  // ws.send(JSON.stringify({
+  //   "response_type": "metadata",
+  //   "metadata": {
+  //     "story_mode": isStoryMode,
+  //   }
+  // }));
+
+  
+
   ws.on("error", (err) => {
     console.error("Error received in LLM websocket client: ", err);
   });
@@ -224,17 +200,24 @@ export default async (ws: WebSocket, req: Request) => {
     }
 
     try {
-      const request: RetellRequest = JSON.parse(data.toString());
-      console.log("Checking and Emittings Story Mode");
-      //checkAndEmitStoryMode();
-      ws.send(JSON.stringify({ type: 'metadata', event: 'storyMode', data: { isStoryMode: isStoryMode } }));
-      console.log("Done checking and emitting story mode");
-
       const { data: _call } = await supabase
       .from("calls")
       .select("mode")
       .eq("id", call.id)
       .single();
+
+      const request: CustomLlmRequest = JSON.parse(data.toString());
+
+      //console.log(request)
+
+      if (request.interaction_type === "ping_pong") {
+        let pingpongResponse: CustomLlmResponse = {
+          response_type: "ping_pong",
+          timestamp: request.timestamp,
+        };
+        ws.send(JSON.stringify(pingpongResponse));
+        return;
+      }
 
       if (request.interaction_type === "update_only") {
         // process live transcript update if needed
@@ -271,20 +254,54 @@ export default async (ws: WebSocket, req: Request) => {
 
             if (tool_call.function.name) {
               fnName = tool_call.function.name;
-              // console.log(fnName);
-              if (fnName === "storyMode") {
-                console.log("Story mode activated");
-                isStoryMode = true;
-              }
-            }
 
+              // if (fnName === "storyMode") {
+              //   console.log("Story mode activated");
+              //   isStoryMode = true;
+              //   capturingStory = false;  // Start capturing when actual story begins
+              //   storyTranscript = [];
+              //   ws.send(JSON.stringify({
+              //     "response_type": "metadata",
+              //     "metadata": {
+              //       "story_mode": isStoryMode,
+              //     }
+              //   }));
+              // }
+
+              // if (fnName === "endStoryMode") {
+              //   console.log("End of Story mode");
+              //   isStoryMode = false;
+              //   capturingStory = false;
+              //   // ws.send(JSON.stringify({
+              //   //   "response_type": "metadata",
+              //   //   "metadata": {
+              //   //     "story_mode": isStoryMode,
+              //   //     "story_transcript": storyTranscript.join("")
+              //   //   }
+              //   // }));
+              //   storyTranscript = [];
+              //   ws.send(JSON.stringify({
+              //     "response_type": "metadata",
+              //     "metadata": {
+              //       "story_mode": isStoryMode,
+              //     }
+              //   }));
+              // }
+            }
             fnArgs.push(tool_call.function.arguments);
           }
 
           if (delta.content) {
             //if (_call?.mode === "story") {
-              //fullResponse.push(delta.content);
+              fullResponse.push(delta.content);
             //}
+            // console.log(delta.content);
+            // if (isStoryMode && delta.content.includes("Once")) {
+            //   capturingStory = true;
+            // }
+            // if (capturingStory) {
+            //   storyTranscript.push(delta.content);
+            // }
             ws.send(
               JSON.stringify(buildResponse(request, delta.content, false))
             );
@@ -292,7 +309,10 @@ export default async (ws: WebSocket, req: Request) => {
         }
       }
 
-      console.log("Full response: ", fullResponse.join(""));
+      //console.log("Full response: ", fullResponse.join(""));
+      const fullResponseStr = fullResponse.join("");
+      //console.log("Initial response:", fullResponseStr, "\nInteraction type: ", request.interaction_type);
+      CheckStory(fullResponseStr, ws);
 
       if (fnName) {
         const args: any = {
@@ -316,16 +336,54 @@ export default async (ws: WebSocket, req: Request) => {
 
         if (error) console.error("Error in saving function: ", error);
       }
-      // console.log("Checking and Emittings Story Mode");
-      //checkAndEmitStoryMode();
-      // ws.send(JSON.stringify({ type: 'metadata', event: 'storyMode', data: { isStoryMode: isStoryMode } }));
-      // console.log("Done checking and emitting story mode");
     } catch (err) {
       console.error("Error in parsing LLM websocket message: ", err);
       ws.close(1002, "Cannot parse incoming message.");
     }
   });
 };
+
+function CheckStory(response, ws) {
+  if (!response) return;
+
+  //console.log("Initial response:", response);
+  
+  let storyTranscript = response;
+  let newStory = false;
+
+  if (response.includes("Once upon")) {
+    const storyStartIndex = storyTranscript.indexOf("Once upon");
+    storyTranscript = storyTranscript.substring(storyStartIndex);
+    isStoryMode = true;
+    newStory = true;
+    console.log("Starting Story: \n", storyTranscript);
+  }
+
+  if (isStoryMode) {
+    if (storyTranscript.includes("Did you like that story?")) {
+      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("Did you like that story?"))
+      isStoryMode = false;
+    } 
+    else if (storyTranscript.includes("Did you enjoy that story?")) {
+      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("Did you enjoy that story?"))
+      isStoryMode = false;
+    } 
+    else if (storyTranscript.includes("...")) {
+      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("..."))
+    }
+    else if (storyTranscript.includes("Would you like to hear what happens next?")) {
+      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("Would you like to hear what happens next?"))
+    }
+
+    ws.send(JSON.stringify({
+      "response_type": "metadata",
+      "metadata": {
+        "transcript": storyTranscript,
+        "new_story": newStory
+      }
+    }));
+  }
+}
 
 function formatTranscript(call, i) {
   const { transcript, transcript_text, summary } = call;
