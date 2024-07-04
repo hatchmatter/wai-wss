@@ -59,6 +59,7 @@ export default {
     ws: WebSocket,
     request: CustomLlmRequest
   ) {
+    console.log("Ending call");
     ws.send(
       JSON.stringify(buildResponse(request, properties.message, true, true))
     );
@@ -153,6 +154,20 @@ export default {
     ws: WebSocket,
     request: CustomLlmRequest
   ) {
+    //console.log("Story Mode Time!");
+    //console.log('storyMode', properties.message);
+    // ws.send(JSON.stringify(buildResponse(request, properties.message)));
+
+    // await supabase
+    //   .from("calls")
+    //   .update({ mode: "story" });
+  },
+  async beginStory(
+    user: any,
+    properties: any,
+    ws: WebSocket,
+    request: CustomLlmRequest
+  ) {
     console.log("Story Mode Time!");
     //console.log('storyMode', properties.message);
     // ws.send(JSON.stringify(buildResponse(request, properties.message)));
@@ -161,18 +176,18 @@ export default {
     //   .from("calls")
     //   .update({ mode: "story" });
   },
-  async endStoryMode(
-    user: any,
-    properties: any,
-    ws: WebSocket,
-    request: CustomLlmRequest
-  ) {
-    console.log("End Story Mode!");
-    //console.log('storyMode', properties.message);
-    // ws.send(JSON.stringify(buildResponse(request, properties.message)));
+  // async endStory(
+  //   user: any,
+  //   properties: any,
+  //   ws: WebSocket,
+  //   request: CustomLlmRequest
+  // ) {
+  //   console.log("End Story Mode!");
+  //   //console.log('storyMode', properties.message);
+  //   // ws.send(JSON.stringify(buildResponse(request, properties.message)));
 
-    // await supabase
-    //   .from("calls")
-    //   .update({ mode: "story" });
-  },
+  //   // await supabase
+  //   //   .from("calls")
+  //   //   .update({ mode: "story" });
+  // },
 };

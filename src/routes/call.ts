@@ -10,7 +10,7 @@ import { buildResponse, argsToObj } from "../utils";
 import { functions } from "../tools";
 
 let isStoryMode = false;
-// let storyTranscript = [];
+let storyTranscript = [];
 // let capturingStory = false;
 
 export default async (ws: WebSocket, req: Request) => {
@@ -245,63 +245,47 @@ export default async (ws: WebSocket, req: Request) => {
       const fullResponse = [];
 
       for await (const completionChunk of stream) {
-        // console.log("Completion chunk: ", completionChunk.choices[0].delta.content)
         if (completionChunk.choices.length >= 1) {
           const { delta } = completionChunk.choices[0];
 
           if (delta.tool_calls) {
-            const tool_call = delta.tool_calls[0];
+            for (const tool_call of delta.tool_calls) { // incase there is more than one tool call
+              if (tool_call.function.name) {
+                fnName = tool_call.function.name;
+                //console.log(`Function to call: ${fnName}`);
 
-            if (tool_call.function.name) {
-              fnName = tool_call.function.name;
+                if (fnName === "beginStory" && !isStoryMode) {
+                  console.log("Story mode activated");
+                  isStoryMode = true;
+                  storyTranscript = [];
+                }
 
-              // if (fnName === "storyMode") {
-              //   console.log("Story mode activated");
-              //   isStoryMode = true;
-              //   capturingStory = false;  // Start capturing when actual story begins
-              //   storyTranscript = [];
-              //   ws.send(JSON.stringify({
-              //     "response_type": "metadata",
-              //     "metadata": {
-              //       "story_mode": isStoryMode,
-              //     }
-              //   }));
-              // }
-
-              // if (fnName === "endStoryMode") {
-              //   console.log("End of Story mode");
-              //   isStoryMode = false;
-              //   capturingStory = false;
-              //   // ws.send(JSON.stringify({
-              //   //   "response_type": "metadata",
-              //   //   "metadata": {
-              //   //     "story_mode": isStoryMode,
-              //   //     "story_transcript": storyTranscript.join("")
-              //   //   }
-              //   // }));
-              //   storyTranscript = [];
-              //   ws.send(JSON.stringify({
-              //     "response_type": "metadata",
-              //     "metadata": {
-              //       "story_mode": isStoryMode,
-              //     }
-              //   }));
-              // }
+                // if (fnName === "endStory") {
+                //   console.log("End of Story mode");
+                //   isStoryMode = false;
+                //   capturingStory = false;
+                //   // ws.send(JSON.stringify({
+                //   //   "response_type": "metadata",
+                //   //   "metadata": {
+                //   //     "story_mode": isStoryMode,
+                //   //     "story_transcript": storyTranscript.join("")
+                //   //   }
+                //   // }));
+                //   storyTranscript = [];
+                //   ws.send(JSON.stringify({
+                //     "response_type": "metadata",
+                //     "metadata": {
+                //       "story_mode": isStoryMode,
+                //     }
+                //   }));
+                // }
+              }
+              fnArgs.push(tool_call.function.arguments);
             }
-            fnArgs.push(tool_call.function.arguments);
           }
 
           if (delta.content) {
-            //if (_call?.mode === "story") {
-              fullResponse.push(delta.content);
-            //}
-            // console.log(delta.content);
-            // if (isStoryMode && delta.content.includes("Once")) {
-            //   capturingStory = true;
-            // }
-            // if (capturingStory) {
-            //   storyTranscript.push(delta.content);
-            // }
+            fullResponse.push(delta.content);
             ws.send(
               JSON.stringify(buildResponse(request, delta.content, false))
             );
@@ -314,7 +298,7 @@ export default async (ws: WebSocket, req: Request) => {
       //console.log("Initial response:", fullResponseStr, "\nInteraction type: ", request.interaction_type);
       CheckStory(fullResponseStr, ws);
 
-      if (fnName) {
+      if (fnName && fnName !== "beginStory") {
         const args: any = {
           callId: call.id,
           timezone: call.timezone,
@@ -344,45 +328,20 @@ export default async (ws: WebSocket, req: Request) => {
 };
 
 function CheckStory(response, ws) {
-  if (!response) return;
-
-  //console.log("Initial response:", response);
+  if (!response || !isStoryMode) return;
   
   let storyTranscript = response;
-  let newStory = false;
+  let newStory = response.includes("Once upon");
+  
+  console.log("Story Transcript: ", storyTranscript);
 
-  if (response.includes("Once upon")) {
-    const storyStartIndex = storyTranscript.indexOf("Once upon");
-    storyTranscript = storyTranscript.substring(storyStartIndex);
-    isStoryMode = true;
-    newStory = true;
-    console.log("Starting Story: \n", storyTranscript);
-  }
-
-  if (isStoryMode) {
-    if (storyTranscript.includes("Did you like that story?")) {
-      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("Did you like that story?"))
-      isStoryMode = false;
-    } 
-    else if (storyTranscript.includes("Did you enjoy that story?")) {
-      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("Did you enjoy that story?"))
-      isStoryMode = false;
-    } 
-    else if (storyTranscript.includes("...")) {
-      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("..."))
+  ws.send(JSON.stringify({
+    "response_type": "metadata",
+    "metadata": {
+      "transcript": storyTranscript,
+      "new_story": newStory
     }
-    else if (storyTranscript.includes("Would you like to hear what happens next?")) {
-      storyTranscript = storyTranscript.substring(0, storyTranscript.indexOf("Would you like to hear what happens next?"))
-    }
-
-    ws.send(JSON.stringify({
-      "response_type": "metadata",
-      "metadata": {
-        "transcript": storyTranscript,
-        "new_story": newStory
-      }
-    }));
-  }
+  }));
 }
 
 function formatTranscript(call, i) {

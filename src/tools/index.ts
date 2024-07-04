@@ -102,5 +102,37 @@ export default [
         required: ["message"],
       },
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "beginStory",
+      description:
+        "Function to call when a story is being started.",
+      parameters: {
+        type: "object",
+        properties: {
+          message: {
+            type: "string",
+            //description: "Continue on with the story",
+            description: "The message you will say to begin telling a story.",
+          },
+        },
+        required: ["message"],
+      },
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "endStory",
+      description:
+        "Function to call when a story is being finished.",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+    }
   }
 ];
