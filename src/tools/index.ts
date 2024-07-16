@@ -38,28 +38,6 @@ export default [
       },
     },
   },
-  // {
-  //   type: "function",
-  //   function: {
-  //     name: "getCurrentDateTime",
-  //     description: "The function to call when the user asks for the current day, date, and/or time.",
-  //     parameters: {
-  //       type: "object",
-  //       properties: {
-  //         type: {
-  //           type: "string",
-  //           description: `The type of date and/or time you want to get. Options include "day", "date", "time", and "date_time"`,
-  //         },
-  //         message: {
-  //           type: "string",
-  //           description:
-  //             "The message you will say with the current day, date and/or time",
-  //         },
-  //       },
-  //       required: ["type", "message"],
-  //     },
-  //   },
-  // },
   {
     type: "function",
     function: {
@@ -114,7 +92,6 @@ export default [
         properties: {
           message: {
             type: "string",
-            //description: "Continue on with the story",
             description: "The message you will say to begin telling a story.",
           },
         },

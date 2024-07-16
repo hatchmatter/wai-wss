@@ -1,6 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
-// import { format } from "date-fns";
 
 import { CustomLlmRequest } from "../types";
 import { buildResponse, argsToObj } from "../utils";
@@ -65,41 +64,6 @@ export default {
     );
   },
 
-  // getCurrentDateTime(
-  //   ws: WebSocket,
-  //   request: CustomLlmRequest,
-  //   properties: any,
-  //   user: any
-  // ) {
-  //   const type = properties.type;
-  //   let now = new Date();
-
-  //   if (properties.timezone) {
-  //     now = new Date(
-  //       now.toLocaleString("en-US", { timeZone: properties.timezone })
-  //     );
-  //   }
-
-  //   let message = "";
-  //   if (type === "date") {
-  //     message = format(now, "EEEE, MMMM d, yyyy");
-  //   } else if (type === "time") {
-  //     message = format(now, "h:mm a");
-  //   } else if (type === "date_time") {
-  //     message = format(now, "EEEE, MMMM d, yyyy 'at' h:mm a");
-  //   } else if (type === "day") {
-  //     message = format(now, "EEEE");
-  //   } else {
-  //     message = "unknown";
-  //   }
-
-  //   if (properties.message) {
-  //     message = `${properties.message} ${message}`;
-  //   }
-
-  //   const response = buildResponse(request, message);
-  //   ws.send(JSON.stringify(response));
-  // },
   async updatePreferences(
     user: any,
     properties: any,
@@ -148,46 +112,4 @@ export default {
         properties
       );
   },
-  async storyMode(
-    user: any,
-    properties: any,
-    ws: WebSocket,
-    request: CustomLlmRequest
-  ) {
-    //console.log("Story Mode Time!");
-    //console.log('storyMode', properties.message);
-    // ws.send(JSON.stringify(buildResponse(request, properties.message)));
-
-    // await supabase
-    //   .from("calls")
-    //   .update({ mode: "story" });
-  },
-  async beginStory(
-    user: any,
-    properties: any,
-    ws: WebSocket,
-    request: CustomLlmRequest
-  ) {
-    console.log("Story Mode Time!");
-    //console.log('storyMode', properties.message);
-    // ws.send(JSON.stringify(buildResponse(request, properties.message)));
-
-    // await supabase
-    //   .from("calls")
-    //   .update({ mode: "story" });
-  },
-  // async endStory(
-  //   user: any,
-  //   properties: any,
-  //   ws: WebSocket,
-  //   request: CustomLlmRequest
-  // ) {
-  //   console.log("End Story Mode!");
-  //   //console.log('storyMode', properties.message);
-  //   // ws.send(JSON.stringify(buildResponse(request, properties.message)));
-
-  //   // await supabase
-  //   //   .from("calls")
-  //   //   .update({ mode: "story" });
-  // },
 };
