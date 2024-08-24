@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/_health", async (req, res) => {
+app.get("/_health", async (_req, res) => {
   res.json({ status: "Ok" });
 });
 

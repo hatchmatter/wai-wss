@@ -6,7 +6,11 @@ export interface Utterance {
 export interface RetellRequest {
   response_id?: number;
   transcript: Utterance[];
-  interaction_type: "update_only" | "response_required" | "reminder_required" | "call_details";
+  interaction_type:
+    | "update_only"
+    | "response_required"
+    | "reminder_required"
+    | "call_details";
   call: any;
 }
 
