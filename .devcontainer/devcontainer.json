@@ -1,7 +1,10 @@
 {
 	"name": "Wai WSS",
-	"context": "..",
-	"dockerFile": "Dockerfile",
+	"dockerComposeFile": [
+		"../docker-compose.yml"
+	],
+	"service": "app",
+	"workspaceFolder": "/app",
 	"customizations": {
 	  "vscode": {
 		"settings": {
@@ -12,7 +15,5 @@
 		  "esbenp.prettier-vscode"
 		]
 	  }
-	},
-	"postCreateCommand": "npm install",
-	"remoteUser": "vscode"
-  }
+	}
+}

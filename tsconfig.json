@@ -1,15 +1,21 @@
 {
   "compilerOptions": {
-    "strict": false,
+    "strict": true,
     "strictPropertyInitialization": false,
     "strictNullChecks": false,
     "rootDir": "./src",
     "outDir": "./dist",
-    "target": "ES2017",
-    "module": "commonjs",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "lib": ["ES2021.String", "dom", "es2017"],
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "*.txt", ".vscode"]
 }
