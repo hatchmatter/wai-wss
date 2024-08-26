@@ -10,6 +10,7 @@ const schema = z.object({
 
 export const userNameTool = tool(
   async (data) => {
+    console.log("called userNameTool with", data);
     return data;
   },
   {
