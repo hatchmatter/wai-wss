@@ -1,3 +1,5 @@
+export * from "./supabase";
+
 export interface Utterance {
   role: "agent" | "user";
   content: string;
@@ -6,7 +8,12 @@ export interface Utterance {
 export interface RetellRequest {
   response_id?: number;
   transcript: Utterance[];
-  interaction_type: "update_only" | "response_required" | "reminder_required";
+  interaction_type:
+    | "update_only"
+    | "response_required"
+    | "reminder_required"
+    | "call_details";
+  call: any;
 }
 
 export interface RetellResponse {

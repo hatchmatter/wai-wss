@@ -1,23 +1,42 @@
+import fs from "fs";
+import path from "path";
+import url from "url";
+
 import express from "express";
-import { createServer } from "http";
+import morgan from "morgan";
 import cors from "cors";
 import expressWs from "express-ws";
 
-import { call, register } from "./routes";
+import { call } from "./routes";
 
 const app = expressWs(express()).app;
-
-createServer(app);
 
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/_health", async (req, res) => {
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const logDir = path.join(__dirname, "../logs");
+
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
+
+const accessLogStream = fs.createWriteStream(
+  path.join(logDir, "./access.log"),
+  { flags: "a" }
+);
+
+// STDOUT logging
+app.use(morgan("dev"));
+// File logs
+app.use(morgan("combined", { stream: accessLogStream }));
+
+app.get("/_health", async (_req, res) => {
   res.json({ status: "Ok" });
 });
 
-app.post("/register", register);
 app.ws("/call/:id", call);
 
 export default app;

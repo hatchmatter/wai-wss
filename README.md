@@ -3,7 +3,7 @@ WAI Websocket Server
 ### Setup
 
 - Get `.env.development` file from team
-- run `npm i`
-- run `npm run dev`
-- run `ngrok http 8080` to expose your local server to the internet
-- Update the `NEXT_PUBLIC_WSS_URL` in the `.env.local` in the wai-web repo with the public ngrok url
+- Get docker desktop
+- run `docker-compose up --build` the first time, then `docker-compose up` after that
+- in wai-web run the ngrok command described there
+- If using vscode, reopen in devcontainer
