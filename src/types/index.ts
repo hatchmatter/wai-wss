@@ -1,3 +1,5 @@
+export * from "./supabase";
+
 export interface Utterance {
   role: "agent" | "user";
   content: string;

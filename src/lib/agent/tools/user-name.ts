@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { tool } from "@langchain/core/tools";
+import type { RunnableConfig } from "@langchain/core/runnables";
+
+import { callQueue } from "@/jobs";
 
 const schema = z.object({
   name: z.string(),
@@ -9,8 +12,15 @@ const schema = z.object({
 });
 
 export const userNameTool = tool(
-  async (data) => {
-    console.log("called userNameTool with", data);
+  async (data, { configurable }: RunnableConfig) => {
+    const { name } = data;
+
+    await callQueue.add("upsertCallerName", {
+      name,
+      ...configurable,
+    });
+
+    // TODO: look into returning the queue for inserting values into prompt
     return data;
   },
   {

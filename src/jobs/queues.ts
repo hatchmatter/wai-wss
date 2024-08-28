@@ -1,4 +1,4 @@
 import { Queue } from 'bullmq';
 import { connection } from './connection';
 
-export const chatQueue = new Queue('chat', { connection });
+export const callQueue = new Queue('call', { connection });

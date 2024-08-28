@@ -3,18 +3,9 @@ import { Request } from "express";
 import { HumanMessage } from "@langchain/core/messages";
 
 import type { RetellRequest, RetellResponse } from "@/types";
-
-import { agent, systemMessage } from "@/lib/agent";
-import { chatQueue } from "@/jobs";
+import { agent, systemMessage, supabase } from "@/lib";
 
 export default async (ws: WebSocket, req: Request) => {
-  const res: RetellResponse = {
-    response_id: 0,
-    content: "hey",
-    content_complete: true,
-    end_call: false,
-  };
-
   let state: any = {};
 
   // tell retell to send call metadata to use for setting up the prompt
@@ -26,6 +17,13 @@ export default async (ws: WebSocket, req: Request) => {
       },
     })
   );
+
+  const res: RetellResponse = {
+    response_id: 0,
+    content: "hey",
+    content_complete: true,
+    end_call: false,
+  };
 
   ws.send(JSON.stringify(res));
 
@@ -40,14 +38,14 @@ export default async (ws: WebSocket, req: Request) => {
       return;
     }
 
-    const message = {
+    const promptVars = {
       agent_name: state.agent?.name || "Wai",
       caller_name: state.caller.name,
       caller_preferences: JSON.stringify(state.caller.preferences),
     };
 
     const messages = [
-      await systemMessage.format(message),
+      await systemMessage.format(promptVars),
       new HumanMessage(
         request.transcript[request.transcript.length - 1].content
       ),
@@ -56,16 +54,15 @@ export default async (ws: WebSocket, req: Request) => {
     const options = {
       configurable: {
         thread_id: req.params.id,
+        call_id: req.params.id,
+        ...state,
       },
       version: "v2" as const,
     };
 
     const stream = await agent.streamEvents({ messages }, options);
-    let lastData;
 
     for await (const { event, data } of stream) {
-      lastData = data;
-
       if (event === "on_chat_model_stream") {
         const { content } = data.chunk;
 
@@ -73,7 +70,7 @@ export default async (ws: WebSocket, req: Request) => {
           ws.send(
             JSON.stringify({
               response_id: request.response_id,
-              content: content,
+              content,
               content_complete: false,
               end_call: false,
             })
@@ -81,15 +78,17 @@ export default async (ws: WebSocket, req: Request) => {
         }
       }
     }
-
-    const { messages: msgs } = lastData.output;
-    const aiMessage = msgs[msgs.length - 1].content;
-
-    chatQueue.add("chat", { content: aiMessage });
   });
 
   // TODO: update call end time in supabase
-  ws.on("close", async (code) => {});
+  ws.on("close", async (_code) => {
+    await supabase
+      .from("calls")
+      .update({
+        ended_at: new Date().toISOString(),
+      })
+      .eq("retell_id", req.params.id);
+  });
 
   ws.on("error", console.error);
 };

@@ -6,8 +6,6 @@ import { toolNode } from "./tools";
 
 import { GraphState } from "./graph-state";
 
-const model = llm.bindTools(toolNode.tools);
-
 const graph = new StateGraph(GraphState)
   .addNode("agent", callModel)
   .addNode("tools", toolNode)
@@ -34,6 +32,7 @@ function routeMessage(state: typeof GraphState.State) {
 
 async function callModel(state: typeof GraphState.State) {
   const { messages } = state;
+  const model = llm.bindTools(toolNode.tools); // force story with: , {tool_choice: "story"}
   const response = await model.invoke(messages);
 
   return { messages: [response] };
