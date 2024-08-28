@@ -39,7 +39,7 @@ export default async (ws: WebSocket, req: Request) => {
     }
 
     const promptVars = {
-      agent_name: state.agent?.name || "Wai",
+      assistant_name: state.assistant_name || "Wai",
       caller_name: state.caller.name,
       caller_preferences: JSON.stringify(state.caller.preferences),
     };
