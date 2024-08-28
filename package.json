@@ -11,7 +11,9 @@
     "dev": "NODE_ENV=development tsx watch --env-file=.env.development src/index.ts",
     "start": "NODE_ENV=production node dist/index.js",
     "clean": "rm -rf dist",
-    "build": "tsc"
+    "prebuild": "rm -fr dist",
+    "build": "tsc && tsc-alias",
+    "postbuild": "cp src/lib/agent/system.txt dist/lib/agent/system.txt"
   },
   "author": "",
   "license": "ISC",
@@ -37,6 +39,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.5.0",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.10",
     "tsx": "^4.17.0"
   }
 }

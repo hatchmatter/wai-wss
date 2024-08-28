@@ -1,21 +1,27 @@
 {
   "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
     "strict": true,
     "strictPropertyInitialization": false,
     "strictNullChecks": false,
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true, // Add this line
+    "allowSyntheticDefaultImports": true, // Add this line
+    "rootDir": "./src",
+    "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*"],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "verbose": false
+  },
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "*.txt", ".vscode"]
 }
