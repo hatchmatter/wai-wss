@@ -28,12 +28,17 @@ function routeMessage(state: typeof GraphState.State) {
   }
 
   return "tools";
-};
+}
 
 async function callModel(state: typeof GraphState.State) {
   const { messages } = state;
   const model = llm.bindTools(toolNode.tools); // force story with: , {tool_choice: "story"}
-  const response = await model.invoke(messages);
 
-  return { messages: [response] };
+  try {
+    const response = await model.invoke(messages);
+
+    return { messages: [response] };
+  } catch (error) {
+    console.error(error);
+  }
 }

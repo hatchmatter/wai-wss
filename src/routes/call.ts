@@ -1,8 +1,8 @@
 import { RawData, WebSocket } from "ws";
 import { Request } from "express";
-import { HumanMessage } from "@langchain/core/messages";
+import { type BaseMessage, HumanMessage } from "@langchain/core/messages";
 
-import type { RetellRequest, RetellResponse } from "@/types";
+import type { CustomLlmResponse, CustomLlmRequest } from "@/types";
 import { agent, systemMessage, supabase } from "@/lib";
 
 export default async (ws: WebSocket, req: Request) => {
@@ -18,8 +18,9 @@ export default async (ws: WebSocket, req: Request) => {
     })
   );
 
-  const res: RetellResponse = {
+  const res: CustomLlmResponse = {
     response_id: 0,
+    response_type: "response",
     content: "hey",
     content_complete: true,
     end_call: false,
@@ -30,11 +31,21 @@ export default async (ws: WebSocket, req: Request) => {
   ws.on("message", async (data: RawData, isBinary: boolean) => {
     if (isBinary) ws.close(1002, "binary data not supported");
 
-    const request: RetellRequest = JSON.parse(data.toString());
+    const request: CustomLlmRequest = JSON.parse(data.toString());
 
     if (request.interaction_type === "update_only") return;
+
     if (request.interaction_type === "call_details") {
       state = request.call.metadata;
+      return;
+    }
+
+    if (request.interaction_type === "ping_pong") {
+      const pingpongResponse = {
+        response_type: "ping_pong",
+        timestamp: request.timestamp,
+      };
+      ws.send(JSON.stringify(pingpongResponse));
       return;
     }
 
@@ -60,34 +71,42 @@ export default async (ws: WebSocket, req: Request) => {
       version: "v2" as const,
     };
 
-    const stream = await agent.streamEvents({ messages }, options);
-
-    for await (const { event, data } of stream) {
-      if (event === "on_chat_model_stream") {
-        const { content } = data.chunk;
-
-        if (content) {
-          ws.send(
-            JSON.stringify({
-              response_id: request.response_id,
-              content,
-              content_complete: false,
-              end_call: false,
-            })
-          );
+    try {
+      const stream = await agent.streamEvents({ messages }, options);
+  
+      for await (const { event, data } of stream) {
+        if (event === "on_chat_model_stream") {
+          const { content } = data.chunk;
+  
+          if (content) {
+            ws.send(
+              JSON.stringify({
+                response_id: request.response_id,
+                content,
+                content_complete: false,
+                end_call: false,
+              })
+            );
+          }
         }
       }
+    } catch (error) {
+      console.error("Streaming error: ", error);
     }
   });
 
   // TODO: update call end time in supabase
   ws.on("close", async (_code) => {
-    await supabase
+    const { error } = await supabase
       .from("calls")
       .update({
         ended_at: new Date().toISOString(),
       })
       .eq("retell_id", req.params.id);
+
+    if (error) {
+      console.error("Error updating call end time: ", error);
+    }
   });
 
   ws.on("error", console.error);
