@@ -1,6 +1,6 @@
 import { RawData, WebSocket } from "ws";
 import { Request } from "express";
-import { type BaseMessage, HumanMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
 
 import type { CustomLlmResponse, CustomLlmRequest } from "@/types";
 import { agent, systemMessage, supabase } from "@/lib";
@@ -51,8 +51,8 @@ export default async (ws: WebSocket, req: Request) => {
 
     const promptVars = {
       assistant_name: state.assistant_name || "Wai",
-      caller_name: state.caller.name,
-      caller_preferences: JSON.stringify(state.caller.preferences),
+      caller_name: state.caller?.name ?? "",
+      caller_preferences: JSON.stringify(state.caller?.preferences ?? {}),
     };
 
     const messages = [
