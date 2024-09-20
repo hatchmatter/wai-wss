@@ -5,8 +5,20 @@ import { HumanMessage } from "@langchain/core/messages";
 import type { CustomLlmResponse, CustomLlmRequest } from "@/types";
 import { agent, systemMessage, supabase } from "@/lib";
 
+type CallState = {
+  user: {
+    id: string;
+  };
+  assistant_name?: string;
+  caller?: {
+    name: string;
+    preferences: Record<string, any>;
+  };
+};
+
+// TODO: fetch most recent checkpoint/call state from db and load into redis
 export default async (ws: WebSocket, req: Request) => {
-  let state: any = {};
+  let state: CallState;
 
   // tell retell to send call metadata to use for setting up the prompt
   ws.send(
@@ -50,7 +62,7 @@ export default async (ws: WebSocket, req: Request) => {
     }
 
     const promptVars = {
-      assistant_name: state.assistant_name || "Wai",
+      assistant_name: state.assistant_name,
       caller_name: state.caller?.name ?? "",
       caller_preferences: JSON.stringify(state.caller?.preferences ?? {}),
     };
@@ -64,7 +76,7 @@ export default async (ws: WebSocket, req: Request) => {
 
     const options = {
       configurable: {
-        thread_id: req.params.id,
+        thread_id: state.user.id,
         call_id: req.params.id,
         ...state,
       },
@@ -95,7 +107,7 @@ export default async (ws: WebSocket, req: Request) => {
     }
   });
 
-  // TODO: update call end time in supabase
+  // TODO: flush redis and update db with most recent checkpoint/call state to minimize redis memory usage
   ws.on("close", async (_code) => {
     const { error } = await supabase
       .from("calls")

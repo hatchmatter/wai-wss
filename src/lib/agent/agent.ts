@@ -1,10 +1,14 @@
-import { END, START, StateGraph, MemorySaver } from "@langchain/langgraph";
+import { END, START, StateGraph } from "@langchain/langgraph";
 import { AIMessage } from "@langchain/core/messages";
+import IORedis from "ioredis";
+import { RedisSaver } from "checkpoint-redis";
 
-import { llm } from "./openai";
+import { llm as ollama } from "./ollama";
+import { llm as openai } from "./openai";
 import { toolNode } from "./tools";
-
 import { GraphState } from "./graph-state";
+
+const llm = process.env.NODE_ENV === "development" ? ollama : openai;
 
 const graph = new StateGraph(GraphState)
   .addNode("agent", callModel)
@@ -13,8 +17,10 @@ const graph = new StateGraph(GraphState)
   .addEdge("tools", "agent")
   .addEdge(START, "agent");
 
-// TODO: this should be done with redis and not in memory
-const checkpointer = new MemorySaver();
+const connection = new IORedis(process.env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+});
+const checkpointer = new RedisSaver({ connection });
 
 export const agent = graph.compile({ checkpointer });
 
