@@ -23,5 +23,5 @@
     "verbose": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "*.txt", ".vscode"]
+  "exclude": ["node_modules", "*.md", ".vscode"]
 }

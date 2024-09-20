@@ -13,7 +13,7 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const systemTemplate = fs.readFileSync(
-  path.resolve(__dirname, "./system.txt"),
+  path.resolve(__dirname, "./system.md"),
   "utf8"
 );
 

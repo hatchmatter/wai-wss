@@ -15,7 +15,7 @@
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc && tsc-alias",
-    "postbuild": "cp src/lib/agent/system.txt dist/lib/agent/system.txt"
+    "postbuild": "cp src/lib/agent/system.md dist/lib/agent/system.md"
   },
   "author": "",
   "license": "ISC",
