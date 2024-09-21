@@ -1,9 +1,26 @@
 import { RawData, WebSocket } from "ws";
 import { Request } from "express";
-import { HumanMessage } from "@langchain/core/messages";
+import fs from "fs";
+import path from "path";
+import url from "url";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 import type { CustomLlmResponse, CustomLlmRequest } from "@/types";
-import { agent, systemMessage, supabase } from "@/lib";
+import { createAgent, createSystemMessage } from "@/lib/agent";
+import { storyTool, tavily, userNameTool } from "@/lib/agent/tools";
+import { getEventChunks } from "@/lib/agent/utils";
+import { supabase } from "@/lib/supabase";
+import { config } from "@/config";
+
+const { env } = config;
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const systemTemplate = fs.readFileSync(
+  path.resolve(__dirname, "../system-message-template.md"),
+  "utf8"
+);
 
 type CallState = {
   user: {
@@ -16,10 +33,17 @@ type CallState = {
   };
 };
 
+const agent = createAgent({
+  provider: env === "development" ? "ollama" : "openai",
+  checkpointer: "redis",
+  model: "llama3.1",
+  tools: env === "production" && [userNameTool, storyTool, tavily],
+});
+
 // TODO: fetch most recent checkpoint/call state from db and load into redis
 export default async (ws: WebSocket, req: Request) => {
   let state: CallState;
-
+  let systemMessage: SystemMessage;
   // tell retell to send call metadata to use for setting up the prompt
   ws.send(
     JSON.stringify({
@@ -49,6 +73,15 @@ export default async (ws: WebSocket, req: Request) => {
 
     if (request.interaction_type === "call_details") {
       state = request.call.metadata;
+      systemMessage = await createSystemMessage({
+        systemMessageTemplate: systemTemplate,
+        promptVars: {
+          assistant_name: state.assistant_name,
+          caller_name: state.caller?.name ?? "",
+          caller_preferences: JSON.stringify(state.caller?.preferences ?? {}),
+        },
+      });
+
       return;
     }
 
@@ -61,14 +94,8 @@ export default async (ws: WebSocket, req: Request) => {
       return;
     }
 
-    const promptVars = {
-      assistant_name: state.assistant_name,
-      caller_name: state.caller?.name ?? "",
-      caller_preferences: JSON.stringify(state.caller?.preferences ?? {}),
-    };
-
     const messages = [
-      await systemMessage.format(promptVars),
+      systemMessage,
       new HumanMessage(
         request.transcript[request.transcript.length - 1].content
       ),
@@ -77,6 +104,7 @@ export default async (ws: WebSocket, req: Request) => {
     const options = {
       configurable: {
         thread_id: state.user.id,
+        // call_id and ...state are used in tools
         call_id: req.params.id,
         ...state,
       },
@@ -84,26 +112,21 @@ export default async (ws: WebSocket, req: Request) => {
     };
 
     try {
-      const stream = await agent.streamEvents({ messages }, options);
-  
-      for await (const { event, data } of stream) {
-        if (event === "on_chat_model_stream") {
-          const { content } = data.chunk;
-  
-          if (content) {
-            ws.send(
-              JSON.stringify({
-                response_id: request.response_id,
-                content,
-                content_complete: false,
-                end_call: false,
-              })
-            );
-          }
-        }
+      const stream = agent.streamEvents({ messages }, options);
+      const chunks = getEventChunks(stream, "on_chat_model_stream");
+
+      for await (const chunk of chunks) {
+        ws.send(
+          JSON.stringify({
+            response_id: request.response_id,
+            content: chunk.content,
+            content_complete: false,
+            end_call: false,
+          })
+        );
       }
     } catch (error) {
-      console.error("Streaming error: ", error);
+      console.error("Streaming chat completion error: ", error);
     }
   });
 
@@ -123,3 +146,5 @@ export default async (ws: WebSocket, req: Request) => {
 
   ws.on("error", console.error);
 };
+
+
