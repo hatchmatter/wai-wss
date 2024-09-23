@@ -1,4 +1,5 @@
 export * from "./supabase";
+import { User } from "@supabase/supabase-js";``
 
 export interface Utterance {
   role: "agent" | "user" | "system";
@@ -11,9 +12,22 @@ interface PingPongRequest {
   timestamp: number;
 }
 
+interface Caller {
+  name: string;
+  preferences: Record<string, any>;
+}
+
+export interface CallDetails {
+  metadata: {
+    assistant_name: string;
+    user: User;
+    caller: Caller;
+  };
+}
+
 export interface CallDetailsRequest {
   interaction_type: "call_details";
-  call: any;
+  call: CallDetails;
 }
 
 interface UpdateOnlyRequest {

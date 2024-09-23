@@ -18,10 +18,7 @@ const schema = z.object({
 });
 
 export const storyTool = tool(
-  async (data, { configurable }: RunnableConfig) => {
-
-    console.log("storyTool data: ", data);
-
+  async (data, _config) => {
     return data;
   },
   {

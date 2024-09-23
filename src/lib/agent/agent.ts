@@ -17,9 +17,6 @@ export function createAgent(opts: AgentOptions) {
   if (!opts.provider)
     throw new Error("You must set provider to be either 'openai' or 'ollama'");
 
-  if (!opts.model)
-    throw new Error("You must set a model for the provider");
-
   if (opts.provider === "openai") {
     provider = createOpenAi({ model: opts.model });
   }
@@ -29,6 +26,10 @@ export function createAgent(opts: AgentOptions) {
   }
 
   if (opts.checkpointer === "redis") {
+    if (!process.env.REDIS_URL) {
+      throw new Error("REDIS_URL is not set");
+    }
+
     const connection = new IORedis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
     });
@@ -38,7 +39,7 @@ export function createAgent(opts: AgentOptions) {
 
   const toolNode = createTools(opts.tools || []);
   const graph = new StateGraph(GraphState)
-    .addNode("agent", callModel(provider, toolNode))
+    .addNode("agent", callModel(provider!, toolNode))
     .addNode("tools", toolNode)
     .addConditionalEdges("agent", routeMessage)
     .addEdge("tools", "agent")
@@ -46,4 +47,3 @@ export function createAgent(opts: AgentOptions) {
 
   return graph.compile({ checkpointer });
 }
-
