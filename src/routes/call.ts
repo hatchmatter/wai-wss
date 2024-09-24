@@ -7,12 +7,14 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 import type { CustomLlmResponse, CustomLlmRequest, CallDetails } from "@/types";
 import { createAgent, createSystemMessage } from "@/lib/agent";
-import { storyTool, tavily, userNameTool } from "@/lib/agent/tools";
+import { tavily } from "@/lib/agent/tools";
 import { getEventChunks } from "@/lib/agent/utils";
-import { supabase } from "@/lib/supabase";
-import { config } from "@/config";
 
-const { nodeEnv } = config;
+import { userNameTool, storyTool } from "@/lib/tools";
+import { supabase } from "@/lib/supabase";
+import config from "@/config";
+
+const { NODE_ENV, provider, model, checkpointer } = config;
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,10 +25,11 @@ const systemTemplate = fs.readFileSync(
 );
 
 const agent = createAgent({
-  provider: nodeEnv === "development" ? "ollama" : "openai",
-  checkpointer: "redis",
-  model: "llama3.1",
-  tools: nodeEnv === "production" ? [userNameTool, storyTool, tavily] : undefined,
+  provider,
+  checkpointer,
+  model,
+  tools:
+    NODE_ENV === "production" ? [userNameTool, storyTool, tavily] : undefined,
 });
 
 // TODO: fetch most recent checkpoint/call metadata from db and load into redis
@@ -67,7 +70,9 @@ export default async (ws: WebSocket, req: Request) => {
         promptVars: {
           assistant_name: metadata.assistant_name,
           caller_name: metadata.caller?.name ?? "",
-          caller_preferences: JSON.stringify(metadata.caller?.preferences ?? {}),
+          caller_preferences: JSON.stringify(
+            metadata.caller?.preferences ?? {}
+          ),
         },
       });
 
@@ -135,5 +140,3 @@ export default async (ws: WebSocket, req: Request) => {
 
   ws.on("error", console.error);
 };
-
-

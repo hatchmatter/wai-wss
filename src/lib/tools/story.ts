@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "@langchain/core/tools";
-import type { RunnableConfig } from "@langchain/core/runnables";
 
 /**
  * This is a placeholder for the story tool. It's possible there's a better
