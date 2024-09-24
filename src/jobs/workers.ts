@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import { processors } from "./processors";
-import { connection } from "./connection";
+import { redis } from "@/lib/redis";
 
 new Worker(
   "call",
@@ -14,7 +14,7 @@ new Worker(
     return processor(job);
   },
   {
-    connection,
+    connection: redis,
     removeOnComplete: { count: 1000 },
     removeOnFail: { count: 5000 },
   }

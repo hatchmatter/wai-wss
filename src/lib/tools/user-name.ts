@@ -12,12 +12,12 @@ const schema = z.object({
 });
 
 export const userNameTool = tool(
-  async (data, { configurable }: RunnableConfig) => {
+  async (data, config) => {
     const { name } = data;
 
     await callQueue.add("upsertCallerName", {
       name,
-      ...configurable,
+      ...config?.configurable,
     });
 
     // TODO: look into returning the queue for inserting values into prompt

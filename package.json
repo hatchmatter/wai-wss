@@ -12,10 +12,11 @@
     "test": "glob -c \"tsx --env-file .env.test --test \" \"src/**/*.test.ts\"",
     "test:watch": "glob -c \"tsx --env-file .env.test --watch --test \" \"src/**/*.test.ts\"",
     "start": "NODE_ENV=production node dist/index.js",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc && tsc-alias",
-    "postbuild": "cp src/lib/agent/system.txt dist/lib/agent/system.txt"
+    "postbuild": "cp src/lib/agent/system-message-template.md dist/lib/agent/system-message-template.md; cp src/system-message-template.md dist/system-message-template.md"
   },
   "author": "",
   "license": "ISC",

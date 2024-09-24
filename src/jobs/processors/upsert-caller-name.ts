@@ -1,6 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
 import { Job } from "bullmq";
-import { Database } from "@/types";
 import { supabase } from "@/lib";
 
 export const upsertCallerName = async (job: Job) => {

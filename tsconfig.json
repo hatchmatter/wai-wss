@@ -5,7 +5,8 @@
     "moduleResolution": "node",
     "strict": true,
     "strictPropertyInitialization": false,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -23,5 +24,5 @@
     "verbose": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "*.txt", ".vscode"]
+  "exclude": ["node_modules", ".vscode"]
 }
