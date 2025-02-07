@@ -1,4 +1,4 @@
-WAI Websocket Server
+WAI Websocket Server (DEFUNCT)
 
 ### Setup
 
